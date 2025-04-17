@@ -1,12 +1,40 @@
-#include "collision.h"  // Inclure le fichier d'en-tête
+#include "collision.h" // Chemin relatif simplifié, car ils sont dans le même dossier
+#include <SDL2/SDL.h>
 
-// Fonction qui vérifie si deux rectangles se chevauchent (collisions)
-int checkCollision(int x, int y, int w, int h, SDL_Rect obstacle) {
-    SDL_Rect playerRect = {x, y, w, h};
+bool checkCollision(SDL_Rect a, SDL_Rect b) {
+    return SDL_HasIntersection(&a, &b);
+}
 
-    if (playerRect.x + playerRect.w > obstacle.x && playerRect.x < obstacle.x + obstacle.w &&
-        playerRect.y + playerRect.h > obstacle.y && playerRect.y < obstacle.y + obstacle.h) {
-        return 1; // Collision
+void handleCollisions(SDL_Rect* playerRect, float* velocityY, bool* isOnGround, bool* jumping,
+                      SDL_Rect ground, SDL_Rect* platforms, int numPlatforms) {
+    *isOnGround = false;
+    *velocityY += 0.5f; // Applique une gravité
+    playerRect->y += (int)(*velocityY); // Mise à jour de la position Y du joueur en fonction de la vitesse
+
+    // Gestion des collisions avec le sol
+    if (checkCollision(*playerRect, ground)) {
+        playerRect->y = ground.y - playerRect->h; // Le joueur se positionne juste au-dessus du sol
+        *velocityY = 0; // La vitesse verticale est réinitialisée
+        *isOnGround = true; // Le joueur est au sol
+        *jumping = false; // Le joueur n'est plus en train de sauter
     }
-    return 0; // Pas de collision
+
+    // Gestion des collisions avec les plateformes
+    for (int i = 0; i < numPlatforms; i++) {
+        SDL_Rect p = platforms[i];
+        if (checkCollision(*playerRect, p)) {
+            // Collision par-dessus
+            if (*velocityY >= 0 && playerRect->y + playerRect->h <= p.y + 10) {
+                playerRect->y = p.y - playerRect->h; // Le joueur est positionné juste au-dessus de la plateforme
+                *velocityY = 0; // La vitesse verticale est réinitialisée
+                *isOnGround = true; // Le joueur est sur la plateforme
+                *jumping = false; // Le joueur n'est plus en train de sauter
+            }
+            // Collision par-dessous
+            else if (*velocityY < 0 && playerRect->y >= p.y + p.h - 10) {
+                playerRect->y = p.y + p.h; // Le joueur est positionné juste en dessous de la plateforme
+                *velocityY = 1; // Le joueur rebondit légèrement
+            }
+        }
+    }
 }
