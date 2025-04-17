@@ -1,112 +1,122 @@
+#define SDL_MAIN_HANDLED
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
-#include <stdio.h>
+#include <stdbool.h>
 
-// Dimensions de la fenêtre
 #define SCREEN_WIDTH 800
 #define SCREEN_HEIGHT 600
+#define FRAME_TIME 100
 
-// Structure pour le personnage
-SDL_Rect playerRect;
-SDL_Texture* playerTexture;
-SDL_Renderer* renderer;
-SDL_Window* window;
+SDL_Window* window = NULL;
+SDL_Renderer* renderer = NULL;
+SDL_Texture* runMarioFrames[4];
+SDL_Texture* idleMarioFrame;
+int currentFrame = 0;
+Uint32 lastFrameTime = 0;
 
-// Variables pour le saut
-int isJumping = 0;      // Savoir si le personnage est en train de sauter
-float jumpSpeed = -15.0f; // Vitesse du saut (plus négatif = saut plus haut)
-float gravity = 0.5f;     // La gravité qui attire le joueur vers le bas
-float dy = 0;             // Vitesse verticale du personnage
-int groundLevel = SCREEN_HEIGHT - 100; // Niveau du sol, où le personnage doit atterrir
+typedef enum { IDLE, RUN } State;
+State currentState = IDLE;
 
-// Vitesse de déplacement du personnage
-int playerSpeed = 5;
+SDL_Rect playerRect = {100, 100, 50, 50};
+float velocityY = 0;
+bool isOnGround = false;
+bool jumping = false;
 
-// Fonction pour gérer le mouvement et les collisions
-void handleMovement() {
-    const Uint8* state = SDL_GetKeyboardState(NULL);
-    if (state[SDL_SCANCODE_LEFT]) {
-        if (playerRect.x > 0) {  // Limite gauche
-            playerRect.x -= playerSpeed;
-        }
-    }
-    if (state[SDL_SCANCODE_RIGHT]) {
-        if (playerRect.x + playerRect.w < SCREEN_WIDTH) {  // Limite droite
-            playerRect.x += playerSpeed;
-        }
-    }
-}
+bool leftPressed = false;
+bool rightPressed = false;
+SDL_RendererFlip flip = SDL_FLIP_NONE;
 
-// Fonction de gestion du saut et de la gravité
-void handleJump() {
-    // Si l'utilisateur appuie sur la barre d'espace et n'est pas déjà en train de sauter
-    const Uint8* state = SDL_GetKeyboardState(NULL);
-    if (state[SDL_SCANCODE_SPACE] && !isJumping) {
-        dy = jumpSpeed;  // Applique la vitesse du saut
-        isJumping = 1;   // Le personnage est maintenant en l'air
-    }
+SDL_Rect ground = {0, 550, 800, 50};         // Sol
+SDL_Rect platform = {300, 400, 200, 20};     // Plateforme
 
-    // Applique la gravité
-    if (isJumping) {
-        dy += gravity; // La gravité s'ajoute à la vitesse verticale
-    }
+bool init() {
+    if (SDL_Init(SDL_INIT_VIDEO) < 0) return false;
+    if (!IMG_Init(IMG_INIT_PNG)) return false;
 
-    // Déplace le personnage verticalement
-    playerRect.y += (int)dy;
-
-    // Si le personnage touche le sol
-    if (playerRect.y >= groundLevel) {
-        playerRect.y = groundLevel; // Positionne le personnage au sol
-        isJumping = 0;  // Le personnage n'est plus en l'air
-        dy = 0; // Réinitialise la vitesse verticale
-    }
-}
-
-// Fonction d'initialisation
-int init() {
-    if (SDL_Init(SDL_INIT_VIDEO) < 0) {
-        printf("SDL_Init Error: %s\n", SDL_GetError());
-        return -1;
-    }
-
-    window = SDL_CreateWindow("Mario Game", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
-    if (window == NULL) {
-        printf("SDL_CreateWindow Error: %s\n", SDL_GetError());
-        return -1;
-    }
+    window = SDL_CreateWindow("Mario Sprite & Collision",
+                              SDL_WINDOWPOS_CENTERED,
+                              SDL_WINDOWPOS_CENTERED,
+                              SCREEN_WIDTH, SCREEN_HEIGHT,
+                              SDL_WINDOW_SHOWN);
+    if (!window) return false;
 
     renderer = SDL_CreateRenderer(window, -1, SDL_RENDERER_ACCELERATED);
-    if (renderer == NULL) {
-        printf("SDL_CreateRenderer Error: %s\n", SDL_GetError());
-        return -1;
-    }
-
-    // Chargement de l'image du joueur
-    SDL_Surface* playerSurface = IMG_Load("images/mario.png");
-    if (!playerSurface) {
-        printf("IMG_Load Error: %s\n", IMG_GetError());
-        return -1;
-    }
-
-    playerTexture = SDL_CreateTextureFromSurface(renderer, playerSurface);
-    SDL_FreeSurface(playerSurface);
-    if (!playerTexture) {
-        printf("CreateTexture Error: %s\n", SDL_GetError());
-        return -1;
-    }
-
-    // Initialisation du personnage (position de départ)
-    playerRect.x = 100;
-    playerRect.y = groundLevel;
-    playerRect.w = 50;
-    playerRect.h = 50;
-
-    return 0;
+    return renderer != NULL;
 }
 
-// Fonction de nettoyage
-void closeGame() {
-    SDL_DestroyTexture(playerTexture);
+SDL_Texture* loadTexture(const char* path) {
+    SDL_Surface* surface = IMG_Load(path);
+    if (!surface) return NULL;
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+    SDL_FreeSurface(surface);
+    return texture;
+}
+
+void loadRunFrames() {
+    runMarioFrames[0] = loadTexture("Images/run_mario/0.png");
+    runMarioFrames[1] = loadTexture("Images/run_mario/1.png");
+    runMarioFrames[2] = loadTexture("Images/run_mario/2.png");
+    runMarioFrames[3] = loadTexture("Images/run_mario/3.png");
+
+    idleMarioFrame = loadTexture("Images/idle_mario/0.png"); // Ajoute une image statique
+}
+
+bool checkCollision(SDL_Rect a, SDL_Rect b) {
+    return SDL_HasIntersection(&a, &b);
+}
+
+void applyPhysics() {
+    velocityY += 0.5f; // Gravité
+    playerRect.y += (int)velocityY;
+    isOnGround = false;
+
+    if (checkCollision(playerRect, ground)) {
+        playerRect.y = ground.y - playerRect.h;
+        velocityY = 0;
+        isOnGround = true;
+        jumping = false;
+    }
+
+    if (checkCollision(playerRect, platform)) {
+        if (velocityY >= 0 && playerRect.y + playerRect.h <= platform.y + 10) {
+            playerRect.y = platform.y - playerRect.h;
+            velocityY = 0;
+            isOnGround = true;
+            jumping = false;
+        }
+    }
+}
+
+void updateFrame() {
+    if (SDL_GetTicks() - lastFrameTime > FRAME_TIME) {
+        currentFrame = (currentFrame + 1) % 4;
+        lastFrameTime = SDL_GetTicks();
+    }
+}
+
+void render() {
+    SDL_SetRenderDrawColor(renderer, 92, 148, 252, 255);
+    SDL_RenderClear(renderer);
+
+    SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
+    SDL_RenderFillRect(renderer, &ground);
+
+    SDL_SetRenderDrawColor(renderer, 80, 40, 40, 255);
+    SDL_RenderFillRect(renderer, &platform);
+
+    if (currentState == RUN)
+        SDL_RenderCopyEx(renderer, runMarioFrames[currentFrame], NULL, &playerRect, 0, NULL, flip);
+    else
+        SDL_RenderCopyEx(renderer, idleMarioFrame, NULL, &playerRect, 0, NULL, flip);
+
+    SDL_RenderPresent(renderer);
+}
+
+void cleanUp() {
+    for (int i = 0; i < 4; ++i) {
+        SDL_DestroyTexture(runMarioFrames[i]);
+    }
+    SDL_DestroyTexture(idleMarioFrame);
     SDL_DestroyRenderer(renderer);
     SDL_DestroyWindow(window);
     IMG_Quit();
@@ -114,51 +124,74 @@ void closeGame() {
 }
 
 int main(int argc, char* argv[]) {
-    if (init() < 0) {
-        return -1;
-    }
+    if (!init()) return -1;
+    loadRunFrames();
 
-    int running = 1;
+    bool quit = false;
     SDL_Event e;
 
-    // Boucle principale
-    while (running) {
-        // Gestion des événements
+    while (!quit) {
         while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) {
-                running = 0;
+            if (e.type == SDL_QUIT) quit = true;
+
+            if (e.type == SDL_KEYDOWN) {
+                switch (e.key.keysym.sym) {
+                    case SDLK_ESCAPE:
+                        quit = true;
+                        break;
+                    case SDLK_LEFT:
+                        leftPressed = true;
+                        flip = SDL_FLIP_HORIZONTAL;
+                        break;
+                    case SDLK_RIGHT:
+                        rightPressed = true;
+                        flip = SDL_FLIP_NONE;
+                        break;
+                    case SDLK_SPACE:
+                        if (isOnGround) {
+                            velocityY = -15; // saut plus haut
+                            jumping = true;
+                        }
+                        break;
+                }
+            }
+
+            if (e.type == SDL_KEYUP) {
+                switch (e.key.keysym.sym) {
+                    case SDLK_LEFT:
+                        leftPressed = false;
+                        break;
+                    case SDLK_RIGHT:
+                        rightPressed = false;
+                        break;
+                }
             }
         }
 
-        // Gestion du mouvement du personnage
-        handleMovement();
+        if (leftPressed) {
+            playerRect.x -= 5;
+            if (isOnGround) currentState = RUN;
+        }
 
-        // Gestion du saut et de la gravité
-        handleJump();
+        if (rightPressed) {
+            playerRect.x += 5;
+            if (isOnGround) currentState = RUN;
+        }
 
-        // Effacer l'écran avec un fond (par exemple, bleu ou une texture de fond)
-        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255);  // Bleu pour le fond
-        SDL_RenderClear(renderer);
+        if (!leftPressed && !rightPressed && isOnGround) {
+            currentState = IDLE;
+        }
 
-        // Dessiner l'image de fond
-        SDL_Surface* backgroundSurface = IMG_Load("images/BackgroundMB.png");
-        SDL_Texture* backgroundTexture = SDL_CreateTextureFromSurface(renderer, backgroundSurface);
-        SDL_FreeSurface(backgroundSurface);
-        SDL_RenderCopy(renderer, backgroundTexture, NULL, NULL);
-        SDL_DestroyTexture(backgroundTexture);
+        if (jumping && (leftPressed || rightPressed)) {
+            currentState = RUN;
+        }
 
-        // Dessiner le personnage
-        SDL_RenderCopy(renderer, playerTexture, NULL, &playerRect);
-
-        // Mettre à jour l'écran
-        SDL_RenderPresent(renderer);
-
-        // Délais pour la gestion du taux de rafraîchissement
-        SDL_Delay(16); // 60 FPS environ
+        applyPhysics();
+        updateFrame();
+        render();
+        SDL_Delay(16);
     }
 
-    // Fermer le jeu
-    closeGame();
-
+    cleanUp();
     return 0;
 }
