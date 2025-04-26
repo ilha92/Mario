@@ -1,4 +1,4 @@
-#include "coin.h"
+#include "../include/coin.h"
 #include "collision.h"
 #include <stdlib.h>
 #include <stdio.h>

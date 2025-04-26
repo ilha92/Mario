@@ -2,7 +2,7 @@
 #define COIN_H
 
 #include <SDL2/SDL.h>
-#include <stdbool.h>  // Pour utiliser bool
+#include <stdbool.h>
 
 // Structure représentant une pièce
 typedef struct {

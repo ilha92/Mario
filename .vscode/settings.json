@@ -4,6 +4,9 @@
     "stdio.h": "c",
     "sdl.h": "c",
     "sdl_gfxprimitives.h": "c",
-    "collision.h": "c"
+    "collision.h": "c",
+    "enemy.h": "c",
+    "score.h": "c",
+    "config.h": "c"
   }
 }

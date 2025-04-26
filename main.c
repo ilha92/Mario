@@ -1,23 +1,28 @@
+// main.c
 #define SDL_MAIN_HANDLED
+#define FRAME_TIME 100
+
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
 #include <stdbool.h>
 #include <stdio.h>
 
+/* Partie include */
 #include "collision.h"
 #include "coin.h"
 #include "score.h"
+#include "enemy.h"
+#include "config.h"
+#include "player.h"
 
-#define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 600
-#define FRAME_TIME 100
-
+/* Déclarations globales */
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
 SDL_Texture* runMarioFrames[4];
 SDL_Texture* idleMario = NULL;
 SDL_Texture* coinTexture = NULL;
+SDL_Texture* enemyTexture = NULL;
 
 typedef enum { IDLE, RUN, JUMP } State;
 State currentState = IDLE;
@@ -28,12 +33,14 @@ bool isOnGround = false;
 bool jumping = false;
 bool facingRight = true;
 
-SDL_Rect ground = {0, 550, 800, 50};
-SDL_Rect platforms[2] = {
+SDL_Rect ground = {0, 550, 1600, 100}; // Taille augmentée
+
+SDL_Rect platforms[3] = {
     {200, 450, 150, 20},
-    {400, 380, 150, 20}
+    {400, 380, 150, 20},
+    {600, 280, 250, 20}
 };
-int numPlatforms = 2;
+int numPlatforms = 3;
 
 Coin coins[5] = {
     {{220, 430, 30, 30}, false},
@@ -44,11 +51,16 @@ Coin coins[5] = {
 };
 int numCoins = 5;
 
+Enemy enemies[MAX_ENEMIES];
+int numEnemies = 0;
+
 int currentFrame = 0;
 Uint32 lastFrameTime = 0;
 int score = 0;
 
-// Chargement d'une image avec vérification
+SDL_Rect camera = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
+
+/* Fonctions */
 SDL_Texture* loadTexture(const char* path) {
     SDL_Surface* surface = IMG_Load(path);
     if (!surface) {
@@ -58,7 +70,7 @@ SDL_Texture* loadTexture(const char* path) {
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
     if (!texture) {
-        printf("Erreur texture %s : %s\n", path, SDL_GetError());
+        printf("Erreur création texture %s : %s\n", path, SDL_GetError());
     }
     return texture;
 }
@@ -77,8 +89,7 @@ bool init() {
         return false;
     }
 
-    window = SDL_CreateWindow("Super Mario Platform", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED,
-                              SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
+    window = SDL_CreateWindow("Super Mario Bross", SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, SCREEN_WIDTH, SCREEN_HEIGHT, SDL_WINDOW_SHOWN);
     if (!window) {
         printf("Erreur SDL_CreateWindow : %s\n", SDL_GetError());
         return false;
@@ -101,6 +112,7 @@ void loadTextures() {
     }
     idleMario = loadTexture("Images/idle_mario/0.png");
     coinTexture = loadTexture("Images/idle_coin/0.png");
+    enemyTexture = loadTexture("Images/walk_goomba/0.png");
 }
 
 void updateFrame() {
@@ -110,32 +122,71 @@ void updateFrame() {
     }
 }
 
+void updateCamera(SDL_Rect* camera, SDL_Rect* playerRect) {
+    camera->x = playerRect->x + playerRect->w / 2 - SCREEN_WIDTH / 2;
+    if (camera->x < 0) camera->x = 0;
+    if (camera->x > MAP_WIDTH - SCREEN_WIDTH) camera->x = MAP_WIDTH - SCREEN_WIDTH;
+
+    camera->y = playerRect->y + playerRect->h / 2 - SCREEN_HEIGHT / 2;
+    if (camera->y < 0) camera->y = 0;
+    if (camera->y > MAP_HEIGHT - SCREEN_HEIGHT) camera->y = MAP_HEIGHT - SCREEN_HEIGHT;
+}
+
 void render(TTF_Font* font) {
     SDL_SetRenderDrawColor(renderer, 92, 148, 252, 255);
     SDL_RenderClear(renderer);
 
+    // Ground
     SDL_SetRenderDrawColor(renderer, 100, 100, 100, 255);
-    SDL_RenderFillRect(renderer, &ground);
+    SDL_Rect groundRender = ground;
+    groundRender.x -= camera.x;
+    groundRender.y -= camera.y;
+    SDL_RenderFillRect(renderer, &groundRender);
+    
 
+    // Platforms
     SDL_SetRenderDrawColor(renderer, 180, 100, 50, 255);
     for (int i = 0; i < numPlatforms; i++) {
-        SDL_RenderFillRect(renderer, &platforms[i]);
+        SDL_Rect plat = platforms[i];
+        plat.x -= camera.x;
+        plat.y -= camera.y;
+        SDL_RenderFillRect(renderer, &plat);
     }
 
-    // Affichage des pièces
+    // Coins
     for (int i = 0; i < numCoins; i++) {
         if (!coins[i].collected) {
-            SDL_RenderCopy(renderer, coinTexture, NULL, &coins[i].rect);
+            SDL_Rect coinRect = coins[i].rect;
+            coinRect.x -= camera.x;
+            coinRect.y -= camera.y;
+            SDL_RenderCopy(renderer, coinTexture, NULL, &coinRect);
         }
     }
 
+    // Enemies
+    for (int i = 0; i < numEnemies; i++) {
+        if (enemies[i].alive) {
+            SDL_Rect enemyRect = enemies[i].rect;
+            enemyRect.x -= camera.x;
+            enemyRect.y -= camera.y;
+            SDL_RenderCopy(renderer, enemyTexture, NULL, &enemyRect);
+        }
+    }
+
+    // Mario
     SDL_RendererFlip flip = facingRight ? SDL_FLIP_NONE : SDL_FLIP_HORIZONTAL;
     SDL_Texture* marioTexture = (currentState == RUN || currentState == JUMP) ? runMarioFrames[currentFrame] : idleMario;
-    SDL_RenderCopyEx(renderer, marioTexture, NULL, &playerRect, 0, NULL, flip);
+    SDL_Rect marioRender = playerRect;
+    marioRender.x -= camera.x;
+    marioRender.y -= camera.y;
+    SDL_RenderCopyEx(renderer, marioTexture, NULL, &marioRender, 0, NULL, flip);
 
+    // Score
     displayScore(renderer, font, score);
+
     SDL_RenderPresent(renderer);
 }
+
 
 void cleanUp() {
     for (int i = 0; i < 4; ++i) {
@@ -143,6 +194,7 @@ void cleanUp() {
     }
     if (idleMario) SDL_DestroyTexture(idleMario);
     if (coinTexture) SDL_DestroyTexture(coinTexture);
+    if (enemyTexture) SDL_DestroyTexture(enemyTexture);
     if (renderer) SDL_DestroyRenderer(renderer);
     if (window) SDL_DestroyWindow(window);
     IMG_Quit();
@@ -150,15 +202,18 @@ void cleanUp() {
     SDL_Quit();
 }
 
+/* Fonction principale */
 int main(int argc, char* argv[]) {
     if (!init()) return -1;
     loadTextures();
 
-    TTF_Font* font = TTF_OpenFont("Images/arial.ttf", 24);  // Assurez-vous d'avoir la police
+    TTF_Font* font = TTF_OpenFont("Images/arial.ttf", 24);
     if (!font) {
         printf("Erreur chargement police : %s\n", TTF_GetError());
         return -1;
     }
+
+    initEnemies(enemies, &numEnemies);
 
     bool quit = false;
     SDL_Event e;
@@ -189,25 +244,44 @@ int main(int argc, char* argv[]) {
             }
         }
 
+        // Déplacement
         if (moveLeft) playerRect.x -= 6;
         if (moveRight) playerRect.x += 6;
 
+        // Gravité
+        velocityY += 0.5f;
+        playerRect.y += (int)velocityY;
+
+        // Limites
+        if (playerRect.x < 0) playerRect.x = 0;
+        if (playerRect.x > MAP_WIDTH - playerRect.w) playerRect.x = MAP_WIDTH - playerRect.w;
+        if (playerRect.y > MAP_HEIGHT - playerRect.h) {
+            playerRect.y = MAP_HEIGHT - playerRect.h;
+            isOnGround = true;
+            velocityY = 0;
+            jumping = false;
+        }
+
+        // Camera
+        updateCamera(&camera, &playerRect);
+
+        // Etat joueur
         if (moveLeft || moveRight)
             currentState = RUN;
         else if (!jumping)
             currentState = IDLE;
 
+        // Collisions
         handleCollisions(&playerRect, &velocityY, &isOnGround, &jumping, ground, platforms, numPlatforms);
-
-        // Gère la collecte des pièces et la réapparition
         handleCoinCollection(&playerRect, coins, numCoins, &score);
 
-        // L'appel de spawnCoin fait réapparaître les pièces collectées
         for (int i = 0; i < numCoins; i++) {
             if (coins[i].collected) {
-                spawnCoin(coins, numCoins, ground, platforms, numPlatforms);  // Réapparaît la pièce
+                spawnCoin(coins, numCoins, ground, platforms, numPlatforms);
             }
         }
+
+        moveEnemies(enemies, numEnemies);
 
         updateFrame();
         render(font);

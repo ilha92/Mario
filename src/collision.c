@@ -1,39 +1,73 @@
-#include "collision.h" // Chemin relatif simplifié, car ils sont dans le même dossier
+#include "collision.h"
 #include <SDL2/SDL.h>
+#include <stdbool.h>
+#include <math.h>   // Ajout pour fabsf
+#include "enemy.h"
 
-bool checkCollision(SDL_Rect a, SDL_Rect b) {
-    return SDL_HasIntersection(&a, &b);
+// Fonction pour vérifier les collisions entre deux rectangles
+bool checkCollision(SDL_Rect rect1, SDL_Rect rect2) {
+    return (rect1.x + rect1.w > rect2.x && rect1.x < rect2.x + rect2.w &&
+            rect1.y + rect1.h > rect2.y && rect1.y < rect2.y + rect2.h);
 }
 
+// Fonction de gestion des collisions
 void handleCollisions(SDL_Rect* playerRect, float* velocityY, bool* isOnGround, bool* jumping,
                       SDL_Rect ground, SDL_Rect* platforms, int numPlatforms) {
     *isOnGround = false;
-    *velocityY += 0.5f; // Applique une gravité
-    playerRect->y += (int)(*velocityY); // Mise à jour de la position Y du joueur en fonction de la vitesse
 
-    // Gestion des collisions avec le sol
+    // Collision avec le sol
     if (checkCollision(*playerRect, ground)) {
-        playerRect->y = ground.y - playerRect->h; // Le joueur se positionne juste au-dessus du sol
-        *velocityY = 0; // La vitesse verticale est réinitialisée
-        *isOnGround = true; // Le joueur est au sol
-        *jumping = false; // Le joueur n'est plus en train de sauter
+        playerRect->y = ground.y - playerRect->h;  // Mettre le joueur sur le sol
+        *velocityY = 0;  // Stopper la vitesse verticale
+        *isOnGround = true;  // Le joueur est au sol
+        *jumping = false;  // Plus en train de sauter
     }
 
-    // Gestion des collisions avec les plateformes
+    // Collision avec les plateformes
     for (int i = 0; i < numPlatforms; i++) {
-        SDL_Rect p = platforms[i];
-        if (checkCollision(*playerRect, p)) {
-            // Collision par-dessus
-            if (*velocityY >= 0 && playerRect->y + playerRect->h <= p.y + 10) {
-                playerRect->y = p.y - playerRect->h; // Le joueur est positionné juste au-dessus de la plateforme
-                *velocityY = 0; // La vitesse verticale est réinitialisée
-                *isOnGround = true; // Le joueur est sur la plateforme
-                *jumping = false; // Le joueur n'est plus en train de sauter
-            }
-            // Collision par-dessous
-            else if (*velocityY < 0 && playerRect->y >= p.y + p.h - 10) {
-                playerRect->y = p.y + p.h; // Le joueur est positionné juste en dessous de la plateforme
-                *velocityY = 1; // Le joueur rebondit légèrement
+        SDL_Rect platform = platforms[i];
+
+        // Si le joueur tombe (vitesseY > 0) et entre en collision avec la plateforme par le bas
+        if (checkCollision(*playerRect, platform) && *velocityY > 0) {
+            playerRect->y = platform.y - playerRect->h;  // Positionner le joueur juste sur la plateforme
+            *velocityY = 0;  // Stopper la descente
+            *isOnGround = true;  // Le joueur est sur la plateforme
+            *jumping = false;  // Il n'est plus en train de sauter
+        }
+
+        // Si le joueur se déplace vers le haut (vitesseY < 0) et entre en collision avec la plateforme par le haut
+        if (checkCollision(*playerRect, platform) && *velocityY < 0) {
+            playerRect->y = platform.y + platform.h;  // Positionner le joueur juste sous la plateforme
+            *velocityY = 0;  // Stopper le mouvement vertical (la plateforme bloque le saut)
+            *jumping = false;  // Le joueur n'est plus en train de sauter
+        }
+    }
+}
+
+void handleEnemyCollisions(Player* player, Enemy enemies[], int numEnemies) {
+    for (int i = 0; i < numEnemies; i++) {
+        if (!enemies[i].alive || !player->alive) continue;
+
+        // Vérifier la collision
+        if (SDL_HasIntersection(&player->rect, &enemies[i].rect)) {
+            bool hitFromTop = (player->rect.y + player->rect.h - 5) <= enemies[i].rect.y;
+            bool falling = player->velocityY >= 0;  // S'assurer que le joueur tombe
+
+            if (hitFromTop && falling) {
+                enemies[i].alive = 0; // L'ennemi est tué
+                player->velocityY = -8; // Le joueur rebondit
+            } else {
+                player->alive = 0; // Le joueur est tué
+                printf("Le joueur est mort !\n");
+
+                // Empêcher de traverser l'ennemi
+                if (player->rect.x < enemies[i].rect.x) {
+                    // Collision par la gauche
+                    player->rect.x = enemies[i].rect.x - player->rect.w;
+                } else if (player->rect.x > enemies[i].rect.x) {
+                    // Collision par la droite
+                    player->rect.x = enemies[i].rect.x + enemies[i].rect.w;
+                }
             }
         }
     }
