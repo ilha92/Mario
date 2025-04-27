@@ -282,6 +282,21 @@ int main(int argc, char* argv[]) {
         }
 
         moveEnemies(enemies, numEnemies);
+        // Collision avec les ennemis
+        for (int i = 0; i < numEnemies; i++) {
+            if (enemies[i].alive && SDL_HasIntersection(&playerRect, &enemies[i].rect)) {
+                if (playerRect.y + playerRect.h - 10 < enemies[i].rect.y) {
+                    // Mario saute sur l'ennemi → tue l'ennemi
+                    enemies[i].alive = false;
+                    velocityY = -10; // petit rebond
+                    score += 100; // bonus de score
+                } else {
+                    // Mario touche l'ennemi de côté → Game Over
+                    printf("Game Over !\n");
+                    quit = true;
+                }
+            }
+        }
 
         updateFrame();
         render(font);

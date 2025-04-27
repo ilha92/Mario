@@ -57,17 +57,16 @@ void handleEnemyCollisions(Player* player, Enemy enemies[], int numEnemies) {
                 enemies[i].alive = 0; // L'ennemi est tué
                 player->velocityY = -8; // Le joueur rebondit
             } else {
-                player->alive = 0; // Le joueur est tué
-                printf("Le joueur est mort !\n");
-
-                // Empêcher de traverser l'ennemi
-                if (player->rect.x < enemies[i].rect.x) {
-                    // Collision par la gauche
+                // Ici il est en collision latérale ou par dessous -> on bloque
+                if (player->rect.x + player->rect.w / 2 < enemies[i].rect.x + enemies[i].rect.w / 2) {
+                    // Le joueur est à gauche de l'ennemi
                     player->rect.x = enemies[i].rect.x - player->rect.w;
-                } else if (player->rect.x > enemies[i].rect.x) {
-                    // Collision par la droite
+                } else {
+                    // Le joueur est à droite de l'ennemi
                     player->rect.x = enemies[i].rect.x + enemies[i].rect.w;
                 }
+
+                player->velocityY = 0; // Bloquer aussi verticalement si besoin
             }
         }
     }
