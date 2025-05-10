@@ -12,6 +12,7 @@ typedef struct {
     int facingRight;
     int alive;
     int health;
+    int lives;
 } Player;
 
 // Déclarations externes des variables globales
@@ -20,9 +21,13 @@ extern int SCREEN_HEIGHT;    // Hauteur de l'écran
 extern int MAP_WIDTH;        // Largeur de la carte
 extern int MAP_HEIGHT;       // Hauteur de la carte
 
+// Déclaration des fonctions
 void initPlayer(Player* player);
+void checkPlayerLives(Player* player);
 void update_player_and_camera(Player* player, SDL_Rect* camera);
 void renderPlayer(SDL_Renderer* renderer, Player* player, SDL_Rect camera);
+void updateGravityAndJump(Player* player);
+void jump(Player* player);
 
 
 #endif

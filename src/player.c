@@ -1,6 +1,8 @@
+// player.c
 #include "player.h"
 #include "config.h"
 #include <SDL2/SDL.h>
+#include <stdio.h>
 
 // Fonction qui initialise le joueur
 void initPlayer(Player* player) {
@@ -15,6 +17,25 @@ void initPlayer(Player* player) {
     player->facingRight = 1;
     player->alive = 1;
     player->health = 100;
+    player->lives = 3; // Initialiser le nombre de vies
+}
+
+// Fonction pour gérer la perte de vies
+void checkPlayerLives(Player* player) {
+    if (player->health <= 0) {
+        player->lives -= 1;  // Le joueur perd une vie
+        player->health = 100;  // Réinitialiser la santé du joueur
+        player->rect.x = 100;  // Réinitialiser la position du joueur
+        player->rect.y = 100;
+
+        printf("Vous avez %d vies restantes.\n", player->lives);
+
+        // Si le joueur n'a plus de vies, il est mort
+        if (player->lives <= 0) {
+            player->alive = 0;  // Le joueur est mort
+            printf("Game Over! Vous avez perdu toutes vos vies.\n");
+        }
+    }
 }
 
 // Fonction qui met à jour la position du joueur et la caméra
@@ -47,7 +68,6 @@ void update_player_and_camera(Player* player, SDL_Rect* camera) {
     if (camera->y > MAP_HEIGHT - camera->h) camera->y = MAP_HEIGHT - camera->h;
 }
 
-
 // Fonction de rendu du joueur (exemple)
 void renderPlayer(SDL_Renderer* renderer, Player* player, SDL_Rect camera) {
     SDL_Rect renderQuad = {
@@ -60,7 +80,6 @@ void renderPlayer(SDL_Renderer* renderer, Player* player, SDL_Rect camera) {
     SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Rouge
     SDL_RenderFillRect(renderer, &renderQuad); // Affiche Mario à la bonne position caméra
 }
-
 
 // Mise à jour de la gravité et du saut (ajoutée pour une meilleure interaction)
 void updateGravityAndJump(Player* player) {

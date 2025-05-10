@@ -3,6 +3,7 @@
 
 #include <SDL2/SDL.h>
 #include "player.h"
+#include <stdbool.h>
 
 #define MAX_ENEMIES 10
 #define SCREEN_WIDTH 800
@@ -12,7 +13,8 @@ typedef struct {
     SDL_Rect rect;     // Position et taille de l'ennemi
     int velocity;      // Vitesse de déplacement
     int movingRight;   // 1 = va à droite, 0 = va à gauche
-    int alive;         // 1 = vivant, 0 = mort
+    bool alive;
+    Uint32 deathTime;
 } Enemy;
 
 // Initialise les ennemis

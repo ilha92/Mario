@@ -54,10 +54,24 @@ void handleEnemyCollisions(Player* player, Enemy enemies[], int numEnemies) {
             bool falling = player->velocityY >= 0;  // S'assurer que le joueur tombe
 
             if (hitFromTop && falling) {
-                enemies[i].alive = 0; // L'ennemi est tué
+                // Mario saute sur l'ennemi → tue l'ennemi
+                enemies[i].alive = false; // L'ennemi est tué
                 player->velocityY = -8; // Le joueur rebondit
             } else {
-                // Ici il est en collision latérale ou par dessous -> on bloque
+                // Collision latérale ou par dessous -> Le joueur perd une vie
+                player->lives--;  // Le joueur perd une vie
+                player->health = 100;  // Réinitialiser la santé du joueur
+                player->rect.x = 100;  // Réinitialiser la position du joueur
+                player->rect.y = 100;
+
+                // Si le joueur n'a plus de vies, il est mort
+                if (player->lives <= 0) {
+                    player->alive = 0;  // Le joueur est mort
+                    printf("Game Over!\n");
+                    break; // Quitte la boucle après la mort
+                }
+
+                // Bloquer la position du joueur si collision latérale
                 if (player->rect.x + player->rect.w / 2 < enemies[i].rect.x + enemies[i].rect.w / 2) {
                     // Le joueur est à gauche de l'ennemi
                     player->rect.x = enemies[i].rect.x - player->rect.w;

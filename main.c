@@ -220,9 +220,22 @@ int main(int argc, char* argv[]) {
     bool moveLeft = false, moveRight = false;
 
     while (!quit) {
+        // Mise à jour du temps actuel
+        Uint32 currentTime = SDL_GetTicks();
+    
+        // Réinitialisation des ennemis morts après 10 secondes
+        for (int i = 0; i < numEnemies; i++) {
+            if (!enemies[i].alive && currentTime - enemies[i].deathTime >= 10000) { // 10 secondes
+                enemies[i].alive = 1;
+                enemies[i].rect.x = rand() % 600 + 100; // repositionnement X aléatoire
+                enemies[i].rect.y = 400;                // Y fixe
+            }
+        }
+    
+        // Gestion des événements
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) quit = true;
-
+    
             if (e.type == SDL_KEYDOWN) {
                 switch (e.key.keysym.sym) {
                     case SDLK_ESCAPE: quit = true; break;
@@ -230,7 +243,7 @@ int main(int argc, char* argv[]) {
                     case SDLK_RIGHT: moveRight = true; facingRight = true; break;
                     case SDLK_SPACE:
                         if (isOnGround) {
-                            velocityY = -12;
+                            velocityY = -12;  // Saut
                             jumping = true;
                             currentState = JUMP;
                         }
@@ -243,16 +256,16 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
-
-        // Déplacement
+    
+        // Déplacement du joueur
         if (moveLeft) playerRect.x -= 6;
         if (moveRight) playerRect.x += 6;
-
-        // Gravité
+    
+        // Application de la gravité
         velocityY += 0.5f;
         playerRect.y += (int)velocityY;
-
-        // Limites
+    
+        // Limites de la carte
         if (playerRect.x < 0) playerRect.x = 0;
         if (playerRect.x > MAP_WIDTH - playerRect.w) playerRect.x = MAP_WIDTH - playerRect.w;
         if (playerRect.y > MAP_HEIGHT - playerRect.h) {
@@ -261,43 +274,51 @@ int main(int argc, char* argv[]) {
             velocityY = 0;
             jumping = false;
         }
-
-        // Camera
+    
+        // Mise à jour de la caméra
         updateCamera(&camera, &playerRect);
-
-        // Etat joueur
-        if (moveLeft || moveRight)
+    
+        // Mise à jour de l'état du joueur
+        if (moveLeft || moveRight) {
             currentState = RUN;
-        else if (!jumping)
+        } else if (!jumping) {
             currentState = IDLE;
-
-        // Collisions
+        }
+    
+        // Gestion des collisions
         handleCollisions(&playerRect, &velocityY, &isOnGround, &jumping, ground, platforms, numPlatforms);
         handleCoinCollection(&playerRect, coins, numCoins, &score);
-
+    
         for (int i = 0; i < numCoins; i++) {
             if (coins[i].collected) {
                 spawnCoin(coins, numCoins, ground, platforms, numPlatforms);
             }
         }
-
+    
+        // Déplacement des ennemis
         moveEnemies(enemies, numEnemies);
+    
+        // Variable pour compter les morts du joueur
+        static int deathCount = 0;
+    
         // Collision avec les ennemis
         for (int i = 0; i < numEnemies; i++) {
             if (enemies[i].alive && SDL_HasIntersection(&playerRect, &enemies[i].rect)) {
                 if (playerRect.y + playerRect.h - 10 < enemies[i].rect.y) {
-                    // Mario saute sur l'ennemi → tue l'ennemi
+                    // Le joueur saute sur l'ennemi → tue l'ennemi
                     enemies[i].alive = false;
-                    velocityY = -10; // petit rebond
-                    score += 100; // bonus de score
+                    velocityY = -10;  // Rebond
+                    score += 100;     // Bonus de score
                 } else {
-                    // Mario touche l'ennemi de côté → Game Over
-                    printf("Game Over !\n");
-                    quit = true;
+                    // Le joueur touche l'ennemi de côté → il perd une vie
+                    deathCount++;  // Compteur de morts
+                    if (deathCount >= 3) {
+                        printf("Perdu !\n");
+                        quit = true;  // Quitter le jeu après 3 morts
+                    }
                 }
             }
         }
-
         updateFrame();
         render(font);
         SDL_Delay(16);
