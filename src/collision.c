@@ -48,38 +48,30 @@ void handleEnemyCollisions(Player* player, Enemy enemies[], int numEnemies) {
     for (int i = 0; i < numEnemies; i++) {
         if (!enemies[i].alive || !player->alive) continue;
 
-        // Vérifier la collision
+        // Vérifier la collision entre le joueur et l'ennemi
         if (SDL_HasIntersection(&player->rect, &enemies[i].rect)) {
             bool hitFromTop = (player->rect.y + player->rect.h - 5) <= enemies[i].rect.y;
-            bool falling = player->velocityY >= 0;  // S'assurer que le joueur tombe
+            bool falling = player->velocityY >= 0;  // Le joueur tombe
 
             if (hitFromTop && falling) {
                 // Mario saute sur l'ennemi → tue l'ennemi
-                enemies[i].alive = false; // L'ennemi est tué
+                enemies[i].alive = 0; // L'ennemi est tué
                 player->velocityY = -8; // Le joueur rebondit
             } else {
                 // Collision latérale ou par dessous -> Le joueur perd une vie
                 player->lives--;  // Le joueur perd une vie
-                player->health = 100;  // Réinitialiser la santé du joueur
-                player->rect.x = 100;  // Réinitialiser la position du joueur
-                player->rect.y = 100;
+                printf("Vous avez %d vies restantes.\n", player->lives);
 
                 // Si le joueur n'a plus de vies, il est mort
                 if (player->lives <= 0) {
                     player->alive = 0;  // Le joueur est mort
-                    printf("Game Over!\n");
-                    break; // Quitte la boucle après la mort
+                    printf("Game Over! Vous avez perdu toutes vos vies.\n");
+                    return;  // Quitte la fonction si le joueur est mort
                 }
 
-                // Bloquer la position du joueur si collision latérale
-                if (player->rect.x + player->rect.w / 2 < enemies[i].rect.x + enemies[i].rect.w / 2) {
-                    // Le joueur est à gauche de l'ennemi
-                    player->rect.x = enemies[i].rect.x - player->rect.w;
-                } else {
-                    // Le joueur est à droite de l'ennemi
-                    player->rect.x = enemies[i].rect.x + enemies[i].rect.w;
-                }
-
+                // Réinitialiser la position du joueur
+                player->rect.x = 100;
+                player->rect.y = 100;
                 player->velocityY = 0; // Bloquer aussi verticalement si besoin
             }
         }

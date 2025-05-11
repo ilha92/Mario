@@ -187,7 +187,6 @@ void render(TTF_Font* font) {
     SDL_RenderPresent(renderer);
 }
 
-
 void cleanUp() {
     for (int i = 0; i < 4; ++i) {
         if (runMarioFrames[i]) SDL_DestroyTexture(runMarioFrames[i]);
@@ -202,6 +201,8 @@ void cleanUp() {
     SDL_Quit();
 }
 
+ int playerLives = 3;
+
 /* Fonction principale */
 int main(int argc, char* argv[]) {
     if (!init()) return -1;
@@ -212,8 +213,10 @@ int main(int argc, char* argv[]) {
         printf("Erreur chargement police : %s\n", TTF_GetError());
         return -1;
     }
+    Player player;
+    initPlayer(&player);
 
-    initEnemies(enemies, &numEnemies);
+    initEnemies(enemies, &numEnemies, platforms, numPlatforms);
 
     bool quit = false;
     SDL_Event e;
@@ -287,7 +290,20 @@ int main(int argc, char* argv[]) {
     
         // Gestion des collisions
         handleCollisions(&playerRect, &velocityY, &isOnGround, &jumping, ground, platforms, numPlatforms);
+
+        // Vérification des collisions avec les pièces
         handleCoinCollection(&playerRect, coins, numCoins, &score);
+        // Mettez à jour le joueur et la caméra
+        update_player_and_camera(&player, &camera);
+
+        // Vérifier les collisions avec les ennemis 
+        handleEnemyCollisions(&player, enemies, numEnemies);
+
+        // Vérifier les vies du joueur
+        checkPlayerLives(&player);
+
+        // Rendu du joueur
+        renderPlayer(renderer, &player, camera);
     
         for (int i = 0; i < numCoins; i++) {
             if (coins[i].collected) {
@@ -297,31 +313,39 @@ int main(int argc, char* argv[]) {
     
         // Déplacement des ennemis
         moveEnemies(enemies, numEnemies);
-    
         // Variable pour compter les morts du joueur
         static int deathCount = 0;
-    
-        // Collision avec les ennemis
-        for (int i = 0; i < numEnemies; i++) {
-            if (enemies[i].alive && SDL_HasIntersection(&playerRect, &enemies[i].rect)) {
-                if (playerRect.y + playerRect.h - 10 < enemies[i].rect.y) {
-                    // Le joueur saute sur l'ennemi → tue l'ennemi
-                    enemies[i].alive = false;
-                    velocityY = -10;  // Rebond
-                    score += 100;     // Bonus de score
-                } else {
-                    // Le joueur touche l'ennemi de côté → il perd une vie
-                    deathCount++;  // Compteur de morts
-                    if (deathCount >= 3) {
-                        printf("Perdu !\n");
-                        quit = true;  // Quitter le jeu après 3 morts
+
+    // Collision avec les ennemis
+            for (int i = 0; i < numEnemies; i++) {
+                if (enemies[i].alive && SDL_HasIntersection(&playerRect, &enemies[i].rect)) {
+                    if (playerRect.y + playerRect.h - 10 < enemies[i].rect.y) {
+                        // Le joueur saute sur l'ennemi → tue l'ennemi
+                        enemies[i].alive = false;
+                        velocityY = -10;  // Rebond
+                        score += 100;     // Bonus de score
+                    } else {
+                        // Le joueur touche l'ennemi de côté → il perd une vie
+                        if (playerLives > 0) {  // Vérifie si le joueur a encore des vies
+                            playerLives--;       // Perdre une vie
+                            printf("Il vous reste %d vies.\n", playerLives);
+                            
+                            if (playerLives <= 0) {
+                                printf("Perdu ! Vous avez epuise toutes vos vies.\n");
+                                quit = true;  // Quitter le jeu après avoir perdu toutes les vies
+                            }
+                        }
+                        // Stopper la logique des collisions après que le joueur ait perdu une vie
+                        enemies[i].alive = false;  // Désactiver temporairement l'ennemi pour éviter des collisions répétées
+                        break;
                     }
                 }
             }
-        }
-        updateFrame();
-        render(font);
-        SDL_Delay(16);
+
+    updateFrame();
+    render(font);
+    SDL_Delay(16);
+
     }
 
     cleanUp();

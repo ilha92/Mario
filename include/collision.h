@@ -13,6 +13,5 @@ void handleCollisions(SDL_Rect* playerRect, float* velocityY, bool* isOnGround, 
 
 // Collisions avec les ennemis
 // Déclaration uniquement ici, la définition se trouve dans collision.c
-void handleEnemyCollisions(Player* player, Enemy enemies[], int numEnemies);
-
+void handleEnemyCollisions(Player* player, Enemy enemies[], int numEnemies) ;
 #endif
