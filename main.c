@@ -35,16 +35,17 @@ bool facingRight = true;
 
 SDL_Rect ground = {0, 550, 1600, 100}; // Taille augmentée
 
-SDL_Rect platforms[6] = {
+SDL_Rect platforms[7] = {
     {200, 450, 150, 20},
     {400, 380, 150, 20},
     {600, 280, 250, 20},
     {800, 380, 150, 20},
     {1000, 450, 150, 20},
-    {1200, 380, 150, 20}
-
+    {1200, 380, 150, 20},
+    {1400, 280, 250, 20}
 };
-int numPlatforms = 6;
+
+int numPlatforms = 7;
 
 Coin coins[5] = {
     {{220, 430, 30, 30}, false},
@@ -53,6 +54,7 @@ Coin coins[5] = {
     {{200, 500, 30, 30}, false},
     {{380, 330, 30, 30}, false}
 };
+
 int numCoins = 5;
 
 Enemy enemies[MAX_ENEMIES];
@@ -316,7 +318,7 @@ int main(int argc, char* argv[]) {
         }
     
         // Déplacement des ennemis
-        moveEnemies(enemies, numEnemies);
+        moveEnemies(enemies, numEnemies, platforms, numPlatforms);
         // Variable pour compter les morts du joueur
         static int deathCount = 0;
 

@@ -21,7 +21,7 @@ typedef struct {
 void initEnemies(Enemy enemies[], int* numEnemies, SDL_Rect platforms[], int numPlatforms);
 
 // Déplace les ennemis (droite/gauche)
-void moveEnemies(Enemy enemies[], int numEnemies);
+void moveEnemies(Enemy enemies[], int numEnemies, SDL_Rect platforms[], int numPlatforms);
 
 // Dessine les ennemis
 void renderEnemies(SDL_Renderer* renderer, Enemy enemies[], int numEnemies);

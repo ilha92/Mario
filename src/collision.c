@@ -56,6 +56,7 @@ void handleEnemyCollisions(Player* player, Enemy enemies[], int numEnemies) {
             if (hitFromTop && falling) {
                 // Mario saute sur l'ennemi → tue l'ennemi
                 enemies[i].alive = 0; // L'ennemi est tué
+                enemies[i].deathTime = SDL_GetTicks(); // Enregistre le moment de la mort
                 player->velocityY = -8; // Le joueur rebondit
             } else {
                 // Collision latérale ou par dessous -> Le joueur perd une vie
