@@ -16,6 +16,7 @@ void initEnemies(Enemy enemies[], int* numEnemies, SDL_Rect platforms[], int num
         enemies[i].alive = 1;
         enemies[i].movingRight = (i % 2 == 0);
         enemies[i].velocity = 2;
+        enemies[i].initialX = positions[i]; // Enregistre la position initiale
 
         // Trouver la plateforme directement en dessous du centre de l'ennemi
         for (int j = 0; j < numPlatforms; j++) {
@@ -26,6 +27,7 @@ void initEnemies(Enemy enemies[], int* numEnemies, SDL_Rect platforms[], int num
             if (enemyCenterX >= p.x && enemyCenterX <= p.x + p.w) {
                 // Place l'ennemi juste au-dessus de la plateforme
                 enemies[i].rect.y = p.y - enemies[i].rect.h;
+                enemies[i].platformIndex = j; // Enregistre l'indice de la plateforme
                 break;
             }
         }
@@ -44,37 +46,24 @@ void moveEnemies(Enemy enemies[], int numEnemies, SDL_Rect platforms[], int numP
             }
 
             // Vérifier si l'ennemi atteint les bords de la plateforme
-            for (int j = 0; j < numPlatforms; j++) {
-                SDL_Rect p = platforms[j];
+            int platformIndex = enemies[i].platformIndex;
+            SDL_Rect p = platforms[platformIndex];
 
-                // Vérifie si l'ennemi est sur la plateforme
-                if (enemies[i].rect.y + enemies[i].rect.h == p.y &&
-                    enemies[i].rect.x + enemies[i].rect.w > p.x &&
-                    enemies[i].rect.x < p.x + p.w) {
-                    
-                    // Si l'ennemi atteint le bord gauche ou droit de la plateforme
-                    if (enemies[i].rect.x <= p.x || enemies[i].rect.x + enemies[i].rect.w >= p.x + p.w) {
-                        enemies[i].movingRight = !enemies[i].movingRight; // Change de direction
-                    }
-                    break;
-                }
+            if (enemies[i].rect.x <= p.x || enemies[i].rect.x + enemies[i].rect.w >= p.x + p.w) {
+                enemies[i].movingRight = !enemies[i].movingRight; // Change de direction
             }
         } else {
             // Si l'ennemi est mort, vérifier le temps pour respawn
             if (now - enemies[i].deathTime >= 10000) { // 10 secondes
-                enemies[i].alive = 1; // Réactiver l'ennemi
-                enemies[i].movingRight = rand() % 2; // Réinitialiser la direction aléatoirement
-                enemies[i].rect.x = rand() % (SCREEN_WIDTH - enemies[i].rect.w); // Nouvelle position aléatoire
-
-                // Trouver une plateforme sous le nouvel ennemi
-                for (int j = 0; j < numPlatforms; j++) {
-                    SDL_Rect p = platforms[j];
-                    int enemyCenterX = enemies[i].rect.x + enemies[i].rect.w / 2;
-                    if (enemyCenterX >= p.x && enemyCenterX <= p.x + p.w) {
-                        enemies[i].rect.y = p.y - enemies[i].rect.h;
-                        break;
-                    }
-                }
+                printf("Respawn de l'ennemi %d\n", i);
+                printf("Position initiale : %d, Plateforme : %d\n", enemies[i].initialX, enemies[i].platformIndex);
+                enemies[i].alive = 1;
+                enemies[i].rect.x = enemies[i].initialX;
+                int platformIndex = enemies[i].platformIndex;
+                SDL_Rect p = platforms[platformIndex];
+                enemies[i].rect.y = p.y - enemies[i].rect.h;
+                enemies[i].movingRight = 1;
+                enemies[i].velocity = 2;
             }
         }
     }

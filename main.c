@@ -222,6 +222,7 @@ int main(int argc, char* argv[]) {
     Player player;
     initPlayer(&player);
 
+    // Initialisation des ennemis
     initEnemies(enemies, &numEnemies, platforms, numPlatforms);
 
     bool quit = false;
@@ -234,10 +235,14 @@ int main(int argc, char* argv[]) {
     
         // Réinitialisation des ennemis morts après 10 secondes
         for (int i = 0; i < numEnemies; i++) {
-            if (!enemies[i].alive && currentTime - enemies[i].deathTime >= 10000) { // 10 secondes
-                enemies[i].alive = 1;
-                enemies[i].rect.x = rand() % 600 + 100; // repositionnement X aléatoire
-                enemies[i].rect.y = 400;                // Y fixe
+            if (!enemies[i].alive && SDL_GetTicks() - enemies[i].deathTime >= 10000) { // 10 secondes
+                enemies[i].alive = 1; // Réactiver l'ennemi
+                enemies[i].rect.x = enemies[i].initialX; // Réinitialiser à la position initiale
+                int platformIndex = enemies[i].platformIndex;
+                SDL_Rect p = platforms[platformIndex];
+                enemies[i].rect.y = p.y - enemies[i].rect.h; // Réinitialiser sur la plateforme
+                enemies[i].movingRight = 1; // Réinitialiser la direction
+                printf("Ennemi %d respawn à la position initiale %d.\n", i, enemies[i].initialX);
             }
         }
     
@@ -327,23 +332,27 @@ int main(int argc, char* argv[]) {
                 if (enemies[i].alive && SDL_HasIntersection(&playerRect, &enemies[i].rect)) {
                     if (playerRect.y + playerRect.h - 10 < enemies[i].rect.y) {
                         // Le joueur saute sur l'ennemi → tue l'ennemi
-                        enemies[i].alive = false;
+                        enemies[i].alive = 0;
+                        enemies[i].deathTime = SDL_GetTicks(); // Enregistre le moment de la mort
                         velocityY = -10;  // Rebond
                         score += 100;     // Bonus de score
+                        printf("Ennemi %d tué !\n", i);
                     } else {
                         // Le joueur touche l'ennemi de côté → il perd une vie
-                        if (playerLives > 0) {  // Vérifie si le joueur a encore des vies
+                        if (playerLives > 0) {
                             playerLives--;       // Perdre une vie
                             printf("Il vous reste %d vies.\n", playerLives);
-                            
+
                             if (playerLives <= 0) {
-                                printf("Perdu ! Vous avez epuise toutes vos vies.\n");
+                                printf("Perdu ! Vous avez épuisé toutes vos vies.\n");
                                 quit = true;  // Quitter le jeu après avoir perdu toutes les vies
                             }
                         }
-                        // Stopper la logique des collisions après que le joueur ait perdu une vie
-                        enemies[i].alive = false;  // Désactiver temporairement l'ennemi pour éviter des collisions répétées
-                        break;
+
+                        // Désactiver temporairement l'ennemi et enregistrer le temps de mort
+                        enemies[i].alive = 0;
+                        enemies[i].deathTime = SDL_GetTicks(); // Enregistre le moment de la mort
+                        printf("Ennemi %d désactivé après collision latérale.\n", i);
                     }
                 }
             }

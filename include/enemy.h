@@ -13,8 +13,10 @@ typedef struct {
     SDL_Rect rect;     // Position et taille de l'ennemi
     int velocity;      // Vitesse de déplacement
     int movingRight;   // 1 = va à droite, 0 = va à gauche
-    bool alive;
-    Uint32 deathTime;
+    bool alive;        // Indique si l'ennemi est vivant
+    Uint32 deathTime;  // Temps de la mort pour le respawn
+    int initialX;      // Position initiale en X
+    int platformIndex; // Indice de la plateforme associée
 } Enemy;
 
 // Initialise les ennemis
