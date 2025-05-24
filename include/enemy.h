@@ -28,7 +28,10 @@ void moveEnemies(Enemy enemies[], int numEnemies, SDL_Rect platforms[], int numP
 // Dessine les ennemis
 void renderEnemies(SDL_Renderer* renderer, Enemy enemies[], int numEnemies);
 
-
+// Gère les collisions entre le joueur et les ennemis
 void handleEnemyCollisions(Player* player, Enemy enemies[], int numEnemies);
+
+// Met à jour les ennemis, vérifie les collisions et gère le score
+void updateEnemies(Enemy enemies[], int numEnemies, SDL_Rect* playerRect, int* playerLives, int* score, SDL_Rect platforms[], int numPlatforms, float* velocityY);
 
 #endif

@@ -15,6 +15,7 @@
 #include "enemy.h"
 #include "config.h"
 #include "player.h"
+#include "powerup.h"
 
 /* Déclarations globales */
 SDL_Window* window = NULL;
@@ -65,6 +66,13 @@ Uint32 lastFrameTime = 0;
 int score = 0;
 
 SDL_Rect camera = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT};
+
+PowerUp powerUps[10];
+int numPowerUps = 0;
+bool isInvincible = false;
+bool isBig = false; // Indique si le joueur est sous l'effet du champignon
+Uint32 bigStartTime = 0; // Temps de début de l'effet du champignon
+Uint32 invincibilityStartTime = 0;
 
 /* Fonctions */
 SDL_Texture* loadTexture(const char* path) {
@@ -149,7 +157,21 @@ void render(TTF_Font* font) {
     groundRender.y -= camera.y;
     SDL_RenderFillRect(renderer, &groundRender);
     
+// Rendu des power-ups
+    for (int i = 0; i < numPowerUps; i++) {
+        if (!powerUps[i].collected) {
+            SDL_Rect powerUpRect = powerUps[i].rect;
+            powerUpRect.x -= camera.x; // Ajuster la position en fonction de la caméra
+            powerUpRect.y -= camera.y;
 
+            if (powerUps[i].type == STAR) {
+                SDL_SetRenderDrawColor(renderer, 255, 255, 0, 255); // Jaune pour l'étoile
+            } else if (powerUps[i].type == MUSHROOM) {
+                SDL_SetRenderDrawColor(renderer, 255, 0, 0, 255); // Rouge pour le champignon
+            }
+            SDL_RenderFillRect(renderer, &powerUpRect);
+        }
+    }
     // Platforms
     SDL_SetRenderDrawColor(renderer, 180, 100, 50, 255);
     for (int i = 0; i < numPlatforms; i++) {
@@ -187,6 +209,8 @@ void render(TTF_Font* font) {
     marioRender.y -= camera.y;
     SDL_RenderCopyEx(renderer, marioTexture, NULL, &marioRender, 0, NULL, flip);
 
+    // Vérification des collisions avec les power-ups
+    handlePowerUpCollection(&playerRect, powerUps, numPowerUps, &isInvincible, &invincibilityStartTime, &playerRect, &isBig, &bigStartTime);
     // Score
     displayScore(renderer, font, score);
 
@@ -224,6 +248,7 @@ int main(int argc, char* argv[]) {
 
     // Initialisation des ennemis
     initEnemies(enemies, &numEnemies, platforms, numPlatforms);
+    initPowerUps(powerUps, &numPowerUps, platforms, numPlatforms);
 
     bool quit = false;
     SDL_Event e;
@@ -232,19 +257,6 @@ int main(int argc, char* argv[]) {
     while (!quit) {
         // Mise à jour du temps actuel
         Uint32 currentTime = SDL_GetTicks();
-    
-        // Réinitialisation des ennemis morts après 10 secondes
-        for (int i = 0; i < numEnemies; i++) {
-            if (!enemies[i].alive && SDL_GetTicks() - enemies[i].deathTime >= 10000) { // 10 secondes
-                enemies[i].alive = 1; // Réactiver l'ennemi
-                enemies[i].rect.x = enemies[i].initialX; // Réinitialiser à la position initiale
-                int platformIndex = enemies[i].platformIndex;
-                SDL_Rect p = platforms[platformIndex];
-                enemies[i].rect.y = p.y - enemies[i].rect.h; // Réinitialiser sur la plateforme
-                enemies[i].movingRight = 1; // Réinitialiser la direction
-                printf("Ennemi %d respawn à la position initiale %d.\n", i, enemies[i].initialX);
-            }
-        }
     
         // Gestion des événements
         while (SDL_PollEvent(&e)) {
@@ -315,7 +327,7 @@ int main(int argc, char* argv[]) {
 
         // Rendu du joueur
         renderPlayer(renderer, &player, camera);
-    
+
         for (int i = 0; i < numCoins; i++) {
             if (coins[i].collected) {
                 spawnCoin(coins, numCoins, ground, platforms, numPlatforms);
@@ -326,43 +338,15 @@ int main(int argc, char* argv[]) {
         moveEnemies(enemies, numEnemies, platforms, numPlatforms);
         // Variable pour compter les morts du joueur
         static int deathCount = 0;
+        // Mise à jour des ennemis
+        updateEnemies(enemies, numEnemies, &playerRect, &playerLives, &score, platforms, numPlatforms, &velocityY);
 
-    // Collision avec les ennemis
-            for (int i = 0; i < numEnemies; i++) {
-                if (enemies[i].alive && SDL_HasIntersection(&playerRect, &enemies[i].rect)) {
-                    if (playerRect.y + playerRect.h - 10 < enemies[i].rect.y) {
-                        // Le joueur saute sur l'ennemi → tue l'ennemi
-                        enemies[i].alive = 0;
-                        enemies[i].deathTime = SDL_GetTicks(); // Enregistre le moment de la mort
-                        velocityY = -10;  // Rebond
-                        score += 100;     // Bonus de score
-                        printf("Ennemi %d tué !\n", i);
-                    } else {
-                        // Le joueur touche l'ennemi de côté → il perd une vie
-                        if (playerLives > 0) {
-                            playerLives--;       // Perdre une vie
-                            printf("Il vous reste %d vies.\n", playerLives);
+        updateFrame();
+        render(font);
+        SDL_Delay(16);
 
-                            if (playerLives <= 0) {
-                                printf("Perdu ! Vous avez épuisé toutes vos vies.\n");
-                                quit = true;  // Quitter le jeu après avoir perdu toutes les vies
-                            }
-                        }
+        }
 
-                        // Désactiver temporairement l'ennemi et enregistrer le temps de mort
-                        enemies[i].alive = 0;
-                        enemies[i].deathTime = SDL_GetTicks(); // Enregistre le moment de la mort
-                        printf("Ennemi %d désactivé après collision latérale.\n", i);
-                    }
-                }
-            }
-
-    updateFrame();
-    render(font);
-    SDL_Delay(16);
-
+        cleanUp();
+        return 0;
     }
-
-    cleanUp();
-    return 0;
-}

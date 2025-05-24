@@ -3,6 +3,7 @@
 #include <stdbool.h>
 #include <math.h>   // Ajout pour fabsf
 #include "enemy.h"
+#include "powerup.h"
 
 // Fonction pour vérifier les collisions entre deux rectangles
 bool checkCollision(SDL_Rect rect1, SDL_Rect rect2) {
@@ -74,6 +75,26 @@ void handleEnemyCollisions(Player* player, Enemy enemies[], int numEnemies) {
                 player->rect.x = 100;
                 player->rect.y = 100;
                 player->velocityY = 0; // Bloquer aussi verticalement si besoin
+            }
+        }
+    }
+}
+
+void handlePowerUpCollisions(SDL_Rect* playerRect, PowerUp powerUps[], int numPowerUps, bool* isInvincible, Uint32* invincibilityStartTime, SDL_Rect* playerSize) {
+    for (int i = 0; i < numPowerUps; i++) {
+        if (!powerUps[i].collected && SDL_HasIntersection(playerRect, &powerUps[i].rect)) {
+            powerUps[i].collected = true;
+
+            if (powerUps[i].type == STAR) {
+                // Activer l'invincibilité
+                *isInvincible = true;
+                *invincibilityStartTime = SDL_GetTicks();
+                printf("Étoile collectée ! Invincibilité activée.\n");
+            } else if (powerUps[i].type == MUSHROOM) {
+                // Augmenter la taille du joueur
+                playerSize->w = (int)(playerSize->w * 1.5);
+                playerSize->h = (int)(playerSize->h * 1.5);
+                printf("Champignon collecté ! Taille augmentée.\n");
             }
         }
     }
