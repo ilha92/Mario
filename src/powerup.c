@@ -12,7 +12,6 @@ void initPowerUps(PowerUp powerUps[], int* numPowerUps, SDL_Rect platforms[], in
     powerUps[1].type = MUSHROOM;
     powerUps[1].collected = false;
 }
-
 void handlePowerUpCollection(SDL_Rect* playerRect, PowerUp powerUps[], int numPowerUps, bool* isInvincible, Uint32* invincibilityStartTime, SDL_Rect* playerRectSize, bool* isBig, Uint32* bigStartTime) {
     for (int i = 0; i < numPowerUps; i++) {
         if (!powerUps[i].collected && SDL_HasIntersection(playerRect, &powerUps[i].rect)) {
@@ -36,9 +35,15 @@ void handlePowerUpCollection(SDL_Rect* playerRect, PowerUp powerUps[], int numPo
 
     // Réinitialiser la taille du joueur après 15 secondes
     if (*isBig && SDL_GetTicks() - *bigStartTime > 15000) { // 15 secondes
-        playerRect->w = 50; // Taille normale
-        playerRect->h = 50; // Taille normale
+        playerRectSize->w = 50; // Taille normale
+        playerRectSize->h = 50; // Taille normale
         *isBig = false; // Désactiver l'état "grand"
         printf("L'effet du champignon est terminé. Taille normale restaurée.\n");
+    }
+
+    // Désactiver l'invincibilité après 15 secondes
+    if (*isInvincible && SDL_GetTicks() - *invincibilityStartTime > 15000) { // 15 secondes
+        *isInvincible = false; // Désactiver l'invincibilité
+        printf("L'effet de l'étoile est terminé. Invincibilité désactivée.\n");
     }
 }

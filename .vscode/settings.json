@@ -8,6 +8,7 @@
     "enemy.h": "c",
     "score.h": "c",
     "config.h": "c",
-    "coin.h": "c"
+    "coin.h": "c",
+    "player.h": "c"
   }
 }

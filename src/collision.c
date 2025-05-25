@@ -45,56 +45,27 @@ void handleCollisions(SDL_Rect* playerRect, float* velocityY, bool* isOnGround, 
     }
 }
 
-void handleEnemyCollisions(Player* player, Enemy enemies[], int numEnemies) {
+void handleEnemyCollisions(Player* player, Enemy enemies[], int numEnemies, bool isInvincible) {
     for (int i = 0; i < numEnemies; i++) {
         if (!enemies[i].alive || !player->alive) continue;
 
         // Vérifier la collision entre le joueur et l'ennemi
         if (SDL_HasIntersection(&player->rect, &enemies[i].rect)) {
-            bool hitFromTop = (player->rect.y + player->rect.h - 5) <= enemies[i].rect.y;
-            bool falling = player->velocityY >= 0;  // Le joueur tombe
-
-            if (hitFromTop && falling) {
-                // Mario saute sur l'ennemi → tue l'ennemi
-                enemies[i].alive = 0; // L'ennemi est tué
-                enemies[i].deathTime = SDL_GetTicks(); // Enregistre le moment de la mort
-                player->velocityY = -8; // Le joueur rebondit
-            } else {
-                // Collision latérale ou par dessous -> Le joueur perd une vie
-                player->lives--;  // Le joueur perd une vie
-                printf("Vous avez %d vies restantes.\n", player->lives);
-
-                // Si le joueur n'a plus de vies, il est mort
-                if (player->lives <= 0) {
-                    player->alive = 0;  // Le joueur est mort
-                    printf("Game Over! Vous avez perdu toutes vos vies.\n");
-                    return;  // Quitte la fonction si le joueur est mort
-                }
-
-                // Réinitialiser la position du joueur
-                player->rect.x = 100;
-                player->rect.y = 100;
-                player->velocityY = 0; // Bloquer aussi verticalement si besoin
+            if (isInvincible) {
+                // Si le joueur est invincible, il ne perd pas de vie
+                printf("Collision avec un ennemi, mais le joueur est invincible.\n");
+                continue; // Ignorer cette collision
             }
-        }
-    }
-}
 
-void handlePowerUpCollisions(SDL_Rect* playerRect, PowerUp powerUps[], int numPowerUps, bool* isInvincible, Uint32* invincibilityStartTime, SDL_Rect* playerSize) {
-    for (int i = 0; i < numPowerUps; i++) {
-        if (!powerUps[i].collected && SDL_HasIntersection(playerRect, &powerUps[i].rect)) {
-            powerUps[i].collected = true;
+            // Si le joueur n'est pas invincible, il perd une vie
+            player->health = 0;  // Le joueur perd toute sa santé
+            checkPlayerLives(player);  // Vérifier les vies restantes
 
-            if (powerUps[i].type == STAR) {
-                // Activer l'invincibilité
-                *isInvincible = true;
-                *invincibilityStartTime = SDL_GetTicks();
-                printf("Étoile collectée ! Invincibilité activée.\n");
-            } else if (powerUps[i].type == MUSHROOM) {
-                // Augmenter la taille du joueur
-                playerSize->w = (int)(playerSize->w * 1.5);
-                playerSize->h = (int)(playerSize->h * 1.5);
-                printf("Champignon collecté ! Taille augmentée.\n");
+            // Si le joueur est encore en vie, respawn au point de départ
+            if (player->alive) {
+                printf("Respawn au point de départ.\n");
+                player->rect.x = 100;  // Position de départ
+                player->rect.y = 100;
             }
         }
     }

@@ -6,8 +6,8 @@
 
 // Fonction qui initialise le joueur
 void initPlayer(Player* player) {
-    player->rect.x = 100;
-    player->rect.y = 100;
+    player->rect.x = 100;  // Position de départ en X
+    player->rect.y = 100;  // Position de départ en Y
     player->rect.w = 50;   // Largeur du joueur
     player->rect.h = 50;   // Hauteur du joueur
     player->velocityX = 0;
@@ -37,7 +37,6 @@ void checkPlayerLives(Player* player) {
         }
     }
 }
-
 // Fonction qui met à jour la position du joueur et la caméra
 void update_player_and_camera(Player* player, SDL_Rect* camera) {
     const Uint8 *state = SDL_GetKeyboardState(NULL);

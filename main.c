@@ -257,11 +257,11 @@ int main(int argc, char* argv[]) {
     while (!quit) {
         // Mise à jour du temps actuel
         Uint32 currentTime = SDL_GetTicks();
-    
+
         // Gestion des événements
         while (SDL_PollEvent(&e)) {
             if (e.type == SDL_QUIT) quit = true;
-    
+
             if (e.type == SDL_KEYDOWN) {
                 switch (e.key.keysym.sym) {
                     case SDLK_ESCAPE: quit = true; break;
@@ -282,15 +282,22 @@ int main(int argc, char* argv[]) {
                 }
             }
         }
-    
+
+        // Vérification des vies du joueur
+        if (!player.alive) {
+            printf("Vous avez perdu toutes vos vies. Fin du jeu.\n");
+            quit = true; // Quitter la boucle principale
+            break;       // Sortir immédiatement de la boucle
+        }
+
         // Déplacement du joueur
         if (moveLeft) playerRect.x -= 6;
         if (moveRight) playerRect.x += 6;
-    
+
         // Application de la gravité
         velocityY += 0.5f;
         playerRect.y += (int)velocityY;
-    
+
         // Limites de la carte
         if (playerRect.x < 0) playerRect.x = 0;
         if (playerRect.x > MAP_WIDTH - playerRect.w) playerRect.x = MAP_WIDTH - playerRect.w;
@@ -300,30 +307,38 @@ int main(int argc, char* argv[]) {
             velocityY = 0;
             jumping = false;
         }
-    
+
         // Mise à jour de la caméra
         updateCamera(&camera, &playerRect);
-    
+
         // Mise à jour de l'état du joueur
         if (moveLeft || moveRight) {
             currentState = RUN;
         } else if (!jumping) {
             currentState = IDLE;
         }
-    
+
         // Gestion des collisions
         handleCollisions(&playerRect, &velocityY, &isOnGround, &jumping, ground, platforms, numPlatforms);
 
         // Vérification des collisions avec les pièces
         handleCoinCollection(&playerRect, coins, numCoins, &score);
+
         // Mettez à jour le joueur et la caméra
         update_player_and_camera(&player, &camera);
 
-        // Vérifier les collisions avec les ennemis 
-        handleEnemyCollisions(&player, enemies, numEnemies);
+        // Vérifier les collisions avec les ennemis
+        handleEnemyCollisions(&player, enemies, numEnemies, isInvincible);
 
         // Vérifier les vies du joueur
         checkPlayerLives(&player);
+
+        // Double vérification pour quitter si le joueur est mort
+        if (!player.alive) {
+            printf("Vous avez perdu toutes vos vies. Fin du jeu.\n");
+            quit = true; // Quitter la boucle principale
+            break;       // Sortir immédiatement de la boucle
+        }
 
         // Rendu du joueur
         renderPlayer(renderer, &player, camera);
@@ -336,17 +351,19 @@ int main(int argc, char* argv[]) {
     
         // Déplacement des ennemis
         moveEnemies(enemies, numEnemies, platforms, numPlatforms);
-        // Variable pour compter les morts du joueur
-        static int deathCount = 0;
+
         // Mise à jour des ennemis
         updateEnemies(enemies, numEnemies, &playerRect, &playerLives, &score, platforms, numPlatforms, &velocityY);
 
+        // Mise à jour des frames et rendu
         updateFrame();
         render(font);
+
+        // Limiter la vitesse de la boucle
         SDL_Delay(16);
-
-        }
-
-        cleanUp();
-        return 0;
     }
+
+    // Nettoyage des ressources
+    cleanUp();
+    return 0;
+}

@@ -79,9 +79,6 @@ void renderEnemies(SDL_Renderer* renderer, Enemy enemies[], int numEnemies) {
     }
 }
 
-// Gestion des collisions (si nécessaire à compléter ailleurs)
-void handleEnemyCollisions(Player* player, Enemy enemies[], int numEnemies);
-
 // enemy.c
 void updateEnemies(Enemy enemies[], int numEnemies, SDL_Rect* playerRect, int* playerLives, int* score, SDL_Rect platforms[], int numPlatforms, float* velocityY) {
     Uint32 now = SDL_GetTicks();
