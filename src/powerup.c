@@ -1,4 +1,12 @@
 #include "../include/powerup.h"
+ // Inclure la déclaration de loadTexture
+#include "../include/texture.h"
+#include <SDL2/SDL_image.h>
+#include <stdio.h>
+
+// Définition des textures globales
+SDL_Texture* starTexture = NULL;
+SDL_Texture* mushroomTexture = NULL;
 
 void initPowerUps(PowerUp powerUps[], int* numPowerUps, SDL_Rect platforms[], int numPlatforms) {
     *numPowerUps = 2; // Exemple : 2 power-ups
@@ -12,6 +20,7 @@ void initPowerUps(PowerUp powerUps[], int* numPowerUps, SDL_Rect platforms[], in
     powerUps[1].type = MUSHROOM;
     powerUps[1].collected = false;
 }
+
 void handlePowerUpCollection(SDL_Rect* playerRect, PowerUp powerUps[], int numPowerUps, bool* isInvincible, Uint32* invincibilityStartTime, SDL_Rect* playerRectSize, bool* isBig, Uint32* bigStartTime) {
     for (int i = 0; i < numPowerUps; i++) {
         if (!powerUps[i].collected && SDL_HasIntersection(playerRect, &powerUps[i].rect)) {
@@ -41,9 +50,49 @@ void handlePowerUpCollection(SDL_Rect* playerRect, PowerUp powerUps[], int numPo
         printf("L'effet du champignon est terminé. Taille normale restaurée.\n");
     }
 
-    // Désactiver l'invincibilité après 15 secondes
-    if (*isInvincible && SDL_GetTicks() - *invincibilityStartTime > 15000) { // 15 secondes
+    // Désactiver l'invincibilité après 10 secondes
+    if (*isInvincible && SDL_GetTicks() - *invincibilityStartTime > 10000) { // 10 secondes
         *isInvincible = false; // Désactiver l'invincibilité
         printf("L'effet de l'étoile est terminé. Invincibilité désactivée.\n");
     }
+}
+
+void loadPowerUpTextures(SDL_Renderer* renderer) {
+    starTexture = loadTexture("Images/objet/etoile.png", renderer);
+    if (!starTexture) {
+        printf("Erreur : Impossible de charger l'image etoile.png\n");
+    }
+
+
+    mushroomTexture = loadTexture("Images/objet/champignon.png", renderer);
+    if (!mushroomTexture) {
+        printf("Erreur : Impossible de charger l'image champignon.png\n");
+    }
+
+    if (!starTexture || !mushroomTexture) {
+        printf("Erreur chargement des textures des power-ups.\n");
+        exit(1);
+    }
+}
+
+void renderPowerUps(SDL_Renderer* renderer, PowerUp powerUps[], int numPowerUps) {
+    for (int i = 0; i < numPowerUps; i++) {
+        if (!powerUps[i].collected) {
+            SDL_Texture* texture = (powerUps[i].type == STAR) ? starTexture : mushroomTexture;
+            SDL_RenderCopy(renderer, texture, NULL, &powerUps[i].rect);
+        }
+    }
+}
+
+void cleanUpPowerUpTextures() {
+    if (starTexture) SDL_DestroyTexture(starTexture);
+    if (mushroomTexture) SDL_DestroyTexture(mushroomTexture);
+}
+
+bool initIMG() {
+    if (!(IMG_Init(IMG_INIT_PNG) & IMG_INIT_PNG)) {
+        printf("Erreur IMG_Init : %s\n", IMG_GetError());
+        return false;
+    }
+    return true;
 }

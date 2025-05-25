@@ -17,5 +17,8 @@ typedef struct {
 
 void initPowerUps(PowerUp powerUps[], int* numPowerUps, SDL_Rect platforms[], int numPlatforms);
 void handlePowerUpCollection(SDL_Rect* playerRect, PowerUp powerUps[], int numPowerUps, bool* isInvincible, Uint32* invincibilityStartTime, SDL_Rect* playerRectSize, bool* isBig, Uint32* bigStartTime);
+void loadPowerUpTextures(SDL_Renderer* renderer);
+void renderPowerUps(SDL_Renderer* renderer, PowerUp powerUps[], int numPowerUps);
+void cleanUpPowerUpTextures();
 
 #endif

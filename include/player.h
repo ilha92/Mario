@@ -2,6 +2,7 @@
 #ifndef PLAYER_H
 #define PLAYER_H
 #include <SDL2/SDL.h>
+#include <stdbool.h>
 
 typedef struct {
     SDL_Rect rect;
@@ -10,9 +11,9 @@ typedef struct {
     int isOnGround;
     int jumping;
     int facingRight;
-    int alive;
     int health;
     int lives;
+    bool alive;
 } Player;
 
 // Déclarations externes des variables globales

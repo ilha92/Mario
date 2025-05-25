@@ -79,7 +79,32 @@ void renderEnemies(SDL_Renderer* renderer, Enemy enemies[], int numEnemies) {
     }
 }
 
-// enemy.c
+void handleEnemyCollisions(Player* player, Enemy enemies[], int numEnemies, bool isInvincible) {
+    for (int i = 0; i < numEnemies; i++) {
+        if (!enemies[i].alive || !player->alive) continue;
+
+        // Vérifier la collision entre le joueur et l'ennemi
+        if (SDL_HasIntersection(&player->rect, &enemies[i].rect)) {
+            if (isInvincible) {
+                // Si le joueur est invincible, il ne perd pas de vie
+                printf("Collision avec un ennemi, mais le joueur est invincible.\n");
+                continue; // Ignorer cette collision
+            }
+
+            // Si le joueur n'est pas invincible, il perd une vie
+            player->health = 0;  // Le joueur perd toute sa santé
+            checkPlayerLives(player);  // Vérifier les vies restantes
+
+            // Si le joueur est encore en vie, respawn au point de départ
+            if (player->alive) {
+                printf("Respawn au point de départ.\n");
+                player->rect.x = 100;  // Position de départ
+                player->rect.y = 100;
+            }
+        }
+    }
+}
+
 void updateEnemies(Enemy enemies[], int numEnemies, SDL_Rect* playerRect, int* playerLives, int* score, SDL_Rect platforms[], int numPlatforms, float* velocityY) {
     Uint32 now = SDL_GetTicks();
 

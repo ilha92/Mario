@@ -3,11 +3,9 @@
 
 #include <SDL2/SDL.h>
 #include "player.h"
+#include "config.h"
 #include <stdbool.h>
 
-#define MAX_ENEMIES 10
-#define SCREEN_WIDTH 800
-#define SCREEN_HEIGHT 600
 
 typedef struct {
     SDL_Rect rect;     // Position et taille de l'ennemi

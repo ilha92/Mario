@@ -16,6 +16,7 @@
 #include "config.h"
 #include "player.h"
 #include "powerup.h"
+#include "texture.h"
 
 /* Déclarations globales */
 SDL_Window* window = NULL;
@@ -24,7 +25,10 @@ SDL_Texture* runMarioFrames[4];
 SDL_Texture* idleMario = NULL;
 SDL_Texture* coinTexture = NULL;
 SDL_Texture* enemyTexture = NULL;
-
+SDL_Texture* menuTexture = NULL;
+SDL_Texture* pauseTexture = NULL;
+SDL_Rect menuRect = {0, 0, SCREEN_WIDTH, SCREEN_HEIGHT}; // Taille de l'image du menu
+SDL_Rect pauseRect = {SCREEN_WIDTH / 4, SCREEN_HEIGHT / 4, SCREEN_WIDTH / 2, SCREEN_HEIGHT / 2}; // Taille de l'image de la pause
 typedef enum { IDLE, RUN, JUMP } State;
 State currentState = IDLE;
 
@@ -33,6 +37,7 @@ float velocityY = 0;
 bool isOnGround = false;
 bool jumping = false;
 bool facingRight = true;
+bool gameOver = false;
 
 SDL_Rect ground = {0, 550, 1600, 100}; // Taille augmentée
 
@@ -74,20 +79,6 @@ bool isBig = false; // Indique si le joueur est sous l'effet du champignon
 Uint32 bigStartTime = 0; // Temps de début de l'effet du champignon
 Uint32 invincibilityStartTime = 0;
 
-/* Fonctions */
-SDL_Texture* loadTexture(const char* path) {
-    SDL_Surface* surface = IMG_Load(path);
-    if (!surface) {
-        printf("Erreur chargement image %s : %s\n", path, IMG_GetError());
-        return NULL;
-    }
-    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
-    SDL_FreeSurface(surface);
-    if (!texture) {
-        printf("Erreur création texture %s : %s\n", path, SDL_GetError());
-    }
-    return texture;
-}
 
 bool init() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -122,11 +113,20 @@ void loadTextures() {
     for (int i = 0; i < 4; i++) {
         char path[64];
         snprintf(path, sizeof(path), "Images/run_mario/%d.png", i);
-        runMarioFrames[i] = loadTexture(path);
+        runMarioFrames[i] = loadTexture(path, renderer); // Passez le renderer ici
     }
-    idleMario = loadTexture("Images/idle_mario/0.png");
-    coinTexture = loadTexture("Images/idle_coin/0.png");
-    enemyTexture = loadTexture("Images/walk_goomba/0.png");
+    idleMario = loadTexture("Images/idle_mario/0.png", renderer); // Passez le renderer ici
+    coinTexture = loadTexture("Images/idle_coin/0.png", renderer); // Passez le renderer ici
+    enemyTexture = loadTexture("Images/walk_goomba/0.png", renderer); // Passez le renderer ici
+}
+
+void loadMenuAndPauseTextures() {
+    menuTexture = loadTexture("Images/UI_SDL_Mario_Bros.png", renderer); // Passez le renderer ici
+    pauseTexture = loadTexture("Images/UI_Pause.png", renderer); // Passez le renderer ici
+    if (!menuTexture || !pauseTexture) {
+        printf("Erreur chargement des textures du menu ou de la pause.\n");
+        exit(1);
+    }
 }
 
 void updateFrame() {
@@ -144,6 +144,18 @@ void updateCamera(SDL_Rect* camera, SDL_Rect* playerRect) {
     camera->y = playerRect->y + playerRect->h / 2 - SCREEN_HEIGHT / 2;
     if (camera->y < 0) camera->y = 0;
     if (camera->y > MAP_HEIGHT - SCREEN_HEIGHT) camera->y = MAP_HEIGHT - SCREEN_HEIGHT;
+}
+
+// Fonction pour afficher le texte à l'écran
+void displayText(SDL_Renderer* renderer, const char* text, int x, int y, TTF_Font* font, SDL_Color color) {
+    SDL_Surface* surface = TTF_RenderText_Solid(font, text, color);
+    SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
+
+    SDL_Rect destRect = {x, y, surface->w, surface->h};
+    SDL_RenderCopy(renderer, texture, NULL, &destRect);
+
+    SDL_FreeSurface(surface);
+    SDL_DestroyTexture(texture);
 }
 
 void render(TTF_Font* font) {
@@ -233,16 +245,52 @@ void cleanUp() {
 
  int playerLives = 3;
 
+ void displayMenu(SDL_Renderer* renderer, SDL_Texture* menuTexture, TTF_Font* font) {
+    bool inMenu = true;
+    SDL_Event e;
+
+    while (inMenu) {
+        SDL_RenderClear(renderer);
+        SDL_RenderCopy(renderer, menuTexture, NULL, &menuRect); // Utiliser menuRect pour réduire la taille
+
+        SDL_Color white = {255, 255, 255, 255};
+        displayText(renderer, "Appuyez sur ENTREE pour commencer", SCREEN_WIDTH / 2 - 200, SCREEN_HEIGHT - 100, font, white);
+
+        SDL_RenderPresent(renderer);
+
+        while (SDL_PollEvent(&e)) {
+            if (e.type == SDL_QUIT) {
+                exit(0); // Quitter le jeu
+            } else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN) {
+                inMenu = false; // Quitter le menu
+            }
+        }
+    }
+}
+
+void displayPause(SDL_Renderer* renderer, SDL_Texture* pauseTexture, TTF_Font* font) {
+    SDL_RenderClear(renderer);
+    SDL_RenderCopy(renderer, pauseTexture, NULL, &pauseRect); // Utiliser pauseRect pour réduire la taille
+
+    SDL_Color white = {255, 255, 255, 255};
+    displayText(renderer, " ", SCREEN_WIDTH / 2 - 50, SCREEN_HEIGHT / 2 - 25, font, white);
+
+    SDL_RenderPresent(renderer);
+}
 /* Fonction principale */
 int main(int argc, char* argv[]) {
     if (!init()) return -1;
     loadTextures();
+    loadMenuAndPauseTextures();
 
-    TTF_Font* font = TTF_OpenFont("Images/arial.ttf", 24);
+   TTF_Font* font = TTF_OpenFont("Images/arial.ttf", 24);
     if (!font) {
         printf("Erreur chargement police : %s\n", TTF_GetError());
         return -1;
     }
+     // Afficher le menu principal
+    displayMenu(renderer, menuTexture, font);
+
     Player player;
     initPlayer(&player);
 
@@ -251,119 +299,130 @@ int main(int argc, char* argv[]) {
     initPowerUps(powerUps, &numPowerUps, platforms, numPlatforms);
 
     bool quit = false;
+    bool paused = false; // Déclarez la variable paused ici
     SDL_Event e;
     bool moveLeft = false, moveRight = false;
+    bool gameOver = false;
 
-    while (!quit) {
-        // Mise à jour du temps actuel
-        Uint32 currentTime = SDL_GetTicks();
-
-        // Gestion des événements
-        while (SDL_PollEvent(&e)) {
-            if (e.type == SDL_QUIT) quit = true;
-
-            if (e.type == SDL_KEYDOWN) {
-                switch (e.key.keysym.sym) {
-                    case SDLK_ESCAPE: quit = true; break;
-                    case SDLK_LEFT: moveLeft = true; facingRight = false; break;
-                    case SDLK_RIGHT: moveRight = true; facingRight = true; break;
-                    case SDLK_SPACE:
-                        if (isOnGround) {
-                            velocityY = -12;  // Saut
-                            jumping = true;
-                            currentState = JUMP;
-                        }
-                        break;
-                }
-            } else if (e.type == SDL_KEYUP) {
-                switch (e.key.keysym.sym) {
-                    case SDLK_LEFT: moveLeft = false; break;
-                    case SDLK_RIGHT: moveRight = false; break;
-                }
-            }
-        }
-
-        // Vérification des vies du joueur
-        if (!player.alive) {
-            printf("Vous avez perdu toutes vos vies. Fin du jeu.\n");
-            quit = true; // Quitter la boucle principale
-            break;       // Sortir immédiatement de la boucle
-        }
-
-        // Déplacement du joueur
-        if (moveLeft) playerRect.x -= 6;
-        if (moveRight) playerRect.x += 6;
-
-        // Application de la gravité
-        velocityY += 0.5f;
-        playerRect.y += (int)velocityY;
-
-        // Limites de la carte
-        if (playerRect.x < 0) playerRect.x = 0;
-        if (playerRect.x > MAP_WIDTH - playerRect.w) playerRect.x = MAP_WIDTH - playerRect.w;
-        if (playerRect.y > MAP_HEIGHT - playerRect.h) {
-            playerRect.y = MAP_HEIGHT - playerRect.h;
-            isOnGround = true;
-            velocityY = 0;
-            jumping = false;
-        }
-
-        // Mise à jour de la caméra
-        updateCamera(&camera, &playerRect);
-
-        // Mise à jour de l'état du joueur
-        if (moveLeft || moveRight) {
-            currentState = RUN;
-        } else if (!jumping) {
-            currentState = IDLE;
-        }
-
-        // Gestion des collisions
-        handleCollisions(&playerRect, &velocityY, &isOnGround, &jumping, ground, platforms, numPlatforms);
-
-        // Vérification des collisions avec les pièces
-        handleCoinCollection(&playerRect, coins, numCoins, &score);
-
-        // Mettez à jour le joueur et la caméra
-        update_player_and_camera(&player, &camera);
-
-        // Vérifier les collisions avec les ennemis
-        handleEnemyCollisions(&player, enemies, numEnemies, isInvincible);
-
-        // Vérifier les vies du joueur
-        checkPlayerLives(&player);
-
-        // Double vérification pour quitter si le joueur est mort
-        if (!player.alive) {
-            printf("Vous avez perdu toutes vos vies. Fin du jeu.\n");
-            quit = true; // Quitter la boucle principale
-            break;       // Sortir immédiatement de la boucle
-        }
-
-        // Rendu du joueur
-        renderPlayer(renderer, &player, camera);
-
-        for (int i = 0; i < numCoins; i++) {
-            if (coins[i].collected) {
-                spawnCoin(coins, numCoins, ground, platforms, numPlatforms);
-            }
-        }
-    
-        // Déplacement des ennemis
-        moveEnemies(enemies, numEnemies, platforms, numPlatforms);
-
-        // Mise à jour des ennemis
-        updateEnemies(enemies, numEnemies, &playerRect, &playerLives, &score, platforms, numPlatforms, &velocityY);
-
-        // Mise à jour des frames et rendu
-        updateFrame();
-        render(font);
-
-        // Limiter la vitesse de la boucle
-        SDL_Delay(16);
+while (!quit) {
+    // Vérification des vies du joueur
+    checkPlayerLives(&player);
+    if (!player.alive) {
+        gameOver = true;
     }
 
-    // Nettoyage des ressources
-    cleanUp();
-    return 0;
+    // Si gameOver est actif, afficher l'écran Game Over et attendre une entrée
+    if (gameOver) {
+        SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
+        SDL_RenderClear(renderer);
+        SDL_Color white = {255, 255, 255, 255};
+        displayText(renderer, "Game Over", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 50, font, white);
+        SDL_RenderPresent(renderer);
+        
+        // Boucle d'attente pour quitter
+        bool waitingForInput = true;
+        while (waitingForInput) {
+            while (SDL_PollEvent(&e)) {
+                if (e.type == SDL_QUIT) {
+                    quit = true;
+                    waitingForInput = false;
+                    break;
+                } else if (e.type == SDL_KEYDOWN) {
+                    if (e.key.keysym.sym == SDLK_RETURN || e.key.keysym.sym == SDLK_ESCAPE) {
+                        quit = true;
+                        waitingForInput = false;
+                        break;
+                    }
+                }
+            }
+        }
+        break; // Quitter la boucle principale
+    }
+    
+    // Gestion des événements
+    while (SDL_PollEvent(&e)) {
+        if (e.type == SDL_QUIT)
+            quit = true;
+        else if (e.type == SDL_KEYDOWN) {
+            switch (e.key.keysym.sym) {
+                case SDLK_ESCAPE: quit = true; break;
+                case SDLK_p: paused = !paused; break;
+                case SDLK_LEFT: moveLeft = true; facingRight = false; break;
+                case SDLK_RIGHT: moveRight = true; facingRight = true; break;
+                case SDLK_SPACE:
+                    if (isOnGround) {
+                        velocityY = -12;  // Saut
+                        jumping = true;
+                        currentState = JUMP;
+                    }
+                    break;
+            }
+        } else if (e.type == SDL_KEYUP) {
+            switch (e.key.keysym.sym) {
+                case SDLK_LEFT: moveLeft = false; break;
+                case SDLK_RIGHT: moveRight = false; break;
+            }
+        }
+    }
+    
+    // Déplacement du joueur
+    if (moveLeft) playerRect.x -= 6;
+    if (moveRight) playerRect.x += 6;
+    
+    // Application de la gravité
+    velocityY += 0.5f;
+    playerRect.y += (int)velocityY;
+    
+    // Limites de la carte
+    if (playerRect.x < 0) playerRect.x = 0;
+    if (playerRect.x > MAP_WIDTH - playerRect.w) playerRect.x = MAP_WIDTH - playerRect.w;
+    if (playerRect.y > MAP_HEIGHT - playerRect.h) {
+        playerRect.y = MAP_HEIGHT - playerRect.h;
+        isOnGround = true;
+        velocityY = 0;
+        jumping = false;
+    }
+    
+    // Mise à jour de la caméra et de l'état du joueur
+    updateCamera(&camera, &playerRect);
+    if (moveLeft || moveRight)
+        currentState = RUN;
+    else if (!jumping)
+        currentState = IDLE;
+    
+    // Si le jeu est en pause, afficher l'écran de pause et passer au prochain cycle
+    if (paused) {
+        displayPause(renderer, pauseTexture, font);
+        SDL_Delay(100);
+        continue;
+    }
+    
+    // Mises à jour diverses
+    handleEnemyCollisions(&player, enemies, numEnemies, isInvincible);
+    handleCollisions(&playerRect, &velocityY, &isOnGround, &jumping, ground, platforms, numPlatforms);
+    handleCoinCollection(&playerRect, coins, numCoins, &score);
+    update_player_and_camera(&player, &camera);
+    renderPlayer(renderer, &player, camera);
+    
+    for (int i = 0; i < numCoins; i++) {
+        if (coins[i].collected)
+            spawnCoin(coins, numCoins, ground, platforms, numPlatforms);
+    }
+    
+    moveEnemies(enemies, numEnemies, platforms, numPlatforms);
+    updateEnemies(enemies, numEnemies, &playerRect, &playerLives, &score, platforms, numPlatforms, &velocityY);
+    
+    updateFrame();
+    render(font);
+    renderPowerUps(renderer, powerUps, numPowerUps);
+    SDL_RenderPresent(renderer);
+    SDL_Delay(16);
+}
+
+// Nettoyage des ressources
+SDL_DestroyTexture(menuTexture);
+SDL_DestroyTexture(pauseTexture);
+cleanUp();
+cleanUpPowerUpTextures();
+return 0;
 }

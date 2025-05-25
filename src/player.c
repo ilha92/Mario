@@ -1,4 +1,4 @@
-// player.c
+#include <stdbool.h> 
 #include "player.h"
 #include "config.h"
 #include <SDL2/SDL.h>
@@ -24,19 +24,18 @@ void initPlayer(Player* player) {
 void checkPlayerLives(Player* player) {
     if (player->health <= 0) {
         player->lives -= 1;  // Le joueur perd une vie
-        player->health = 100;  // Réinitialiser la santé du joueur
-        player->rect.x = 100;  // Réinitialiser la position du joueur
-        player->rect.y = 100;
-
-        printf("Vous avez %d vies restantes.\n", player->lives);
-
-        // Si le joueur n'a plus de vies, il est mort
-        if (player->lives <= 0) {
-            player->alive = 0;  // Le joueur est mort
-            printf("Game Over! Vous avez perdu toutes vos vies.\n");
+        if (player->lives > 0) {
+            player->health = 100;  // Réinitialiser la santé
+            player->rect.x = 100;  // Position de départ
+            player->rect.y = 100;
+            printf("Il vous reste %d vies.\n", player->lives);
+        } else {
+            player->alive = false;  // Le joueur est mort
+            printf("Perdu ! Vous avez épuisé toutes vos vies.\n");
         }
     }
 }
+
 // Fonction qui met à jour la position du joueur et la caméra
 void update_player_and_camera(Player* player, SDL_Rect* camera) {
     const Uint8 *state = SDL_GetKeyboardState(NULL);

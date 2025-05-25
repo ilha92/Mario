@@ -9,6 +9,8 @@
     "score.h": "c",
     "config.h": "c",
     "coin.h": "c",
-    "player.h": "c"
+    "player.h": "c",
+    "sdl_image.h": "c",
+    "texture.h": "c"
   }
 }
