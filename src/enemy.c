@@ -146,7 +146,7 @@ void updateEnemies(Enemy enemies[], int numEnemies, SDL_Rect* playerRect, Player
                 }
             }
         } else {
-            // Respawn de l'ennemi après 10 secondes
+            //  l'ennemi respawn après 10 secondes
             if (now - enemies[i].deathTime >= 10000) {
                 enemies[i].alive = 1;
                 enemies[i].rect.x = enemies[i].initialX;
