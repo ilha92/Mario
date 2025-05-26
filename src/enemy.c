@@ -104,7 +104,8 @@ void handleEnemyCollisions(Player* player, Enemy enemies[], int numEnemies, bool
     }
 }
 
-void updateEnemies(Enemy enemies[], int numEnemies, SDL_Rect* playerRect, Player* player, int* score, SDL_Rect platforms[], int numPlatforms, float* velocityY) {
+void updateEnemies(Enemy enemies[], int numEnemies, SDL_Rect* playerRect, Player* player, int* score, 
+                   SDL_Rect platforms[], int numPlatforms, float* velocityY, bool isInvincible) {
     Uint32 now = SDL_GetTicks();
     for (int i = 0; i < numEnemies; i++) {
         if (enemies[i].alive) {
@@ -115,21 +116,25 @@ void updateEnemies(Enemy enemies[], int numEnemies, SDL_Rect* playerRect, Player
                 enemies[i].rect.x -= enemies[i].velocity;
             }
 
-            // On verifie si l'ennemi atteint les bords de la plateforme
+            // Vérification des bords de la plateforme
             int platformIndex = enemies[i].platformIndex;
             SDL_Rect p = platforms[platformIndex];
             if (enemies[i].rect.x <= p.x || enemies[i].rect.x + enemies[i].rect.w >= p.x + p.w) {
-                enemies[i].movingRight = !enemies[i].movingRight; // Change de direction
+                enemies[i].movingRight = !enemies[i].movingRight;
             }
 
             // Collision avec le joueur
             if (SDL_HasIntersection(playerRect, &enemies[i].rect)) {
+                // Si le joueur est invincible, on ignore la collision
+                if (isInvincible) {
+                    continue;
+                }
                 if (playerRect->y + playerRect->h - 10 < enemies[i].rect.y) {
                     // Le joueur saute sur l'ennemi → tue l'ennemi
                     enemies[i].alive = 0;
                     enemies[i].deathTime = now;
                     *score += 100;
-                    *velocityY = -10; // Rebond du joueur
+                    *velocityY = -10;
                     printf("Ennemi %d tué !\n", i);
                 } else {
                     // Le joueur touche l'ennemi de côté → il perd une vie
@@ -146,7 +151,7 @@ void updateEnemies(Enemy enemies[], int numEnemies, SDL_Rect* playerRect, Player
                 }
             }
         } else {
-            //  l'ennemi respawn après 10 secondes
+            // Respawn de l'ennemi après 10 secondes
             if (now - enemies[i].deathTime >= 10000) {
                 enemies[i].alive = 1;
                 enemies[i].rect.x = enemies[i].initialX;

@@ -411,8 +411,7 @@ while (!quit) {
     }
     
     moveEnemies(enemies, numEnemies, platforms, numPlatforms);
-    updateEnemies(enemies, numEnemies, &playerRect, &player, &score, platforms, numPlatforms, &velocityY);
-    
+    updateEnemies(enemies, numEnemies, &playerRect, &player, &score, platforms, numPlatforms, &velocityY, isInvincible);    
     updateFrame();
     render(font);
     renderPowerUps(renderer, powerUps, numPowerUps);
