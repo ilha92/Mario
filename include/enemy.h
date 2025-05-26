@@ -30,6 +30,6 @@ void renderEnemies(SDL_Renderer* renderer, Enemy enemies[], int numEnemies);
 void handleEnemyCollisions(Player* player, Enemy enemies[], int numEnemies, bool isInvincible);
 
 // Met à jour les ennemis, vérifie les collisions et gère le score
-void updateEnemies(Enemy enemies[], int numEnemies, SDL_Rect* playerRect, int* playerLives, int* score, SDL_Rect platforms[], int numPlatforms, float* velocityY);
+void updateEnemies(Enemy enemies[], int numEnemies, SDL_Rect* playerRect, Player* player, int* score, SDL_Rect platforms[], int numPlatforms, float* velocityY);
 
 #endif

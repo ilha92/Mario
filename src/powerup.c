@@ -1,5 +1,5 @@
 #include "../include/powerup.h"
- // Inclure la déclaration de loadTexture
+// Inclure la déclaration de loadTexture
 #include "../include/texture.h"
 #include <SDL2/SDL_image.h>
 #include <stdio.h>

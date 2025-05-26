@@ -18,6 +18,7 @@
 #include "powerup.h"
 #include "texture.h"
 
+
 /* Déclarations globales */
 SDL_Window* window = NULL;
 SDL_Renderer* renderer = NULL;
@@ -410,7 +411,7 @@ while (!quit) {
     }
     
     moveEnemies(enemies, numEnemies, platforms, numPlatforms);
-    updateEnemies(enemies, numEnemies, &playerRect, &playerLives, &score, platforms, numPlatforms, &velocityY);
+    updateEnemies(enemies, numEnemies, &playerRect, &player, &score, platforms, numPlatforms, &velocityY);
     
     updateFrame();
     render(font);

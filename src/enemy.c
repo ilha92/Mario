@@ -2,12 +2,11 @@
 #include <math.h>
 #include <stdbool.h>
 
-// Initialisation des ennemis en fonction des plateformes
 void initEnemies(Enemy enemies[], int* numEnemies, SDL_Rect platforms[], int numPlatforms) {
     *numEnemies = 3;
 
     // Position X de départ souhaitée pour chaque ennemi
-    int positions[] = {220, 420, 650};  // Adapté pour être sur les plateformes définies
+    int positions[] = {220, 420, 650}; 
 
     for (int i = 0; i < *numEnemies; i++) {
         enemies[i].rect.w = 40;
@@ -105,9 +104,8 @@ void handleEnemyCollisions(Player* player, Enemy enemies[], int numEnemies, bool
     }
 }
 
-void updateEnemies(Enemy enemies[], int numEnemies, SDL_Rect* playerRect, int* playerLives, int* score, SDL_Rect platforms[], int numPlatforms, float* velocityY) {
+void updateEnemies(Enemy enemies[], int numEnemies, SDL_Rect* playerRect, Player* player, int* score, SDL_Rect platforms[], int numPlatforms, float* velocityY) {
     Uint32 now = SDL_GetTicks();
-
     for (int i = 0; i < numEnemies; i++) {
         if (enemies[i].alive) {
             // Déplacement de l'ennemi
@@ -117,7 +115,7 @@ void updateEnemies(Enemy enemies[], int numEnemies, SDL_Rect* playerRect, int* p
                 enemies[i].rect.x -= enemies[i].velocity;
             }
 
-            // Vérifier si l'ennemi atteint les bords de la plateforme
+            // On verifie si l'ennemi atteint les bords de la plateforme
             int platformIndex = enemies[i].platformIndex;
             SDL_Rect p = platforms[platformIndex];
             if (enemies[i].rect.x <= p.x || enemies[i].rect.x + enemies[i].rect.w >= p.x + p.w) {
@@ -135,10 +133,11 @@ void updateEnemies(Enemy enemies[], int numEnemies, SDL_Rect* playerRect, int* p
                     printf("Ennemi %d tué !\n", i);
                 } else {
                     // Le joueur touche l'ennemi de côté → il perd une vie
-                    if (*playerLives > 0) {
-                        (*playerLives)--;
-                        printf("Il vous reste %d vies.\n", *playerLives);
-                        if (*playerLives <= 0) {
+                    if (player->lives > 0) {
+                        player->lives--;
+                        printf("Il vous reste %d vies.\n", player->lives);
+                        if (player->lives <= 0) {
+                            player->alive = false;
                             printf("Perdu ! Vous avez épuisé toutes vos vies.\n");
                         }
                     }
@@ -154,7 +153,7 @@ void updateEnemies(Enemy enemies[], int numEnemies, SDL_Rect* playerRect, int* p
                 int platformIndex = enemies[i].platformIndex;
                 SDL_Rect p = platforms[platformIndex];
                 enemies[i].rect.y = p.y - enemies[i].rect.h;
-                enemies[i].movingRight = 1;
+                enemies[i].movingRight = true;
                 printf("Ennemi %d respawn à la position initiale %d.\n", i, enemies[i].initialX);
             }
         }
