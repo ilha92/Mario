@@ -5,6 +5,7 @@
 #include <SDL2/SDL.h>
 #include <SDL2/SDL_image.h>
 #include <SDL2/SDL_ttf.h>
+#include <SDL2/SDL_mixer.h>
 #include <stdbool.h>
 #include <stdio.h>
 
@@ -34,6 +35,12 @@ typedef enum { IDLE, RUN, JUMP } State;
 State currentState = IDLE;
 
 SDL_Rect playerRect = {100, 100, 50, 50};
+// Variables globales pour l'audio
+Mix_Music* bgMusic = NULL;
+Mix_Chunk* coinSound = NULL;
+Mix_Chunk* jumpSound = NULL;
+Mix_Chunk* pauseSound = NULL;
+
 float velocityY = 0;
 bool isOnGround = false;
 bool jumping = false;
@@ -80,7 +87,50 @@ bool isBig = false; // Indique si le joueur est sous l'effet du champignon
 Uint32 bigStartTime = 0; // Temps de début de l'effet du champignon
 Uint32 invincibilityStartTime = 0;
 
+bool initAudio() {
+    if (Mix_OpenAudio(44100, MIX_DEFAULT_FORMAT, 2, 2048) < 0) {
+        printf("Erreur Mix_OpenAudio: %s\n", Mix_GetError());
+        return false;
+    }
+    return true;
+}
 
+void loadSounds() {
+    bgMusic = Mix_LoadMUS("Music/Mario.mp3");
+    if (!bgMusic) {
+        printf("Erreur chargement bgMusic: %s\n", Mix_GetError());
+    }
+    coinSound = Mix_LoadWAV("Audio/Super_Mario_Bros/smb_coin.wav");
+    if (!coinSound) {
+        printf("Erreur chargement coinSound: %s\n", Mix_GetError());
+    }
+    jumpSound = Mix_LoadWAV("Audio/Super_Mario_Bros/smb_jump-small.wav");
+    if (!jumpSound) {
+        printf("Erreur chargement jumpSound: %s\n", Mix_GetError());
+    }
+    pauseSound = Mix_LoadWAV("Audio/Super_Mario_Bros/smb_pause.wav");
+    if (!pauseSound) {
+        printf("Erreur chargement pauseSound: %s\n", Mix_GetError());
+    }
+}
+
+void playBackgroundMusic() {
+    if (bgMusic) {
+        Mix_PlayMusic(bgMusic, -1); // -1 pour boucle infinie
+    }
+}
+
+void playCoinSound() {
+    if (coinSound) Mix_PlayChannel(-1, coinSound, 0);
+}
+
+void playJumpSound() {
+    if (jumpSound) Mix_PlayChannel(-1, jumpSound, 0);
+}
+
+void playPauseSound() {
+    if (pauseSound) Mix_PlayChannel(-1, pauseSound, 0);
+}
 bool init() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
         printf("Erreur SDL_Init : %s\n", SDL_GetError());
@@ -283,7 +333,10 @@ int main(int argc, char* argv[]) {
     if (!init()) return -1;
     loadTextures();
     loadMenuAndPauseTextures();
-
+    // Initialisation de l'audio    
+    if (!initAudio()) return -1;
+    loadSounds();
+    playBackgroundMusic();
    TTF_Font* font = TTF_OpenFont("Images/arial.ttf", 24);
     if (!font) {
         printf("Erreur chargement police : %s\n", TTF_GetError());
@@ -347,7 +400,8 @@ while (!quit) {
         else if (e.type == SDL_KEYDOWN) {
             switch (e.key.keysym.sym) {
                 case SDLK_ESCAPE: quit = true; break;
-                case SDLK_p: paused = !paused; break;
+                case SDLK_p: paused = !paused; playPauseSound(); // Joue le son de pause
+                break;
                 case SDLK_LEFT: moveLeft = true; facingRight = false; break;
                 case SDLK_RIGHT: moveRight = true; facingRight = true; break;
                 case SDLK_SPACE:
@@ -355,6 +409,7 @@ while (!quit) {
                         velocityY = -12;  // Saut
                         jumping = true;
                         currentState = JUMP;
+                        playJumpSound(); // Joue le son de saut
                     }
                     break;
             }
@@ -418,7 +473,14 @@ while (!quit) {
     SDL_RenderPresent(renderer);
     SDL_Delay(16);
 }
-
+// Nettoyage de l'audio
+void cleanupAudio() {
+    if (coinSound) Mix_FreeChunk(coinSound);
+    if (jumpSound) Mix_FreeChunk(jumpSound);
+    if (pauseSound) Mix_FreeChunk(pauseSound);
+    if (bgMusic) Mix_FreeMusic(bgMusic);
+    Mix_CloseAudio();
+}
 // Nettoyage des ressources
 SDL_DestroyTexture(menuTexture);
 SDL_DestroyTexture(pauseTexture);

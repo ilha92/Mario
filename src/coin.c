@@ -3,13 +3,17 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <SDL2/SDL.h>
+#include <SDL2/SDL_mixer.h>
+
+extern void playCoinSound(); // Déclaration de la fonction
 
 void handleCoinCollection(SDL_Rect* playerRect, Coin* coins, int numCoins, int* score) {
     for (int i = 0; i < numCoins; i++) {
-        if (!coins[i].collected && SDL_HasIntersection(playerRect, &coins[i].rect)) {
-            coins[i].collected = true;
-            *score += 10;
-        }
+    if (!coins[i].collected && SDL_HasIntersection(playerRect, &coins[i].rect)) {
+        coins[i].collected = true;
+        *score += 10;
+        playCoinSound(); // Joue le son de pièce
+    }
     }
 }
 
