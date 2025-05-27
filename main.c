@@ -313,16 +313,40 @@ void cleanUp() {
 
  int playerLives = 3;
 
- void displayMenu(SDL_Renderer* renderer, SDL_Texture* menuTexture, TTF_Font* font) {
+void displayMenu(SDL_Renderer* renderer, SDL_Texture* menuTexture, TTF_Font* font) {
     bool inMenu = true;
     SDL_Event e;
 
     while (inMenu) {
         SDL_RenderClear(renderer);
-        SDL_RenderCopy(renderer, menuTexture, NULL, &menuRect); // Utiliser menuRect pour réduire la taille
+        SDL_RenderCopy(renderer, menuTexture, NULL, &menuRect); // on utilise menuRect pour réduire la taille
 
+        SDL_Color black = {0, 0, 0, 255}; // Noir
         SDL_Color white = {255, 255, 255, 255};
-        displayText(renderer, "Appuyez sur ENTREE pour commencer", SCREEN_WIDTH / 2 - 200, SCREEN_HEIGHT - 100, font, white);
+
+        // Définir les dimensions de l'encadrement
+        SDL_Rect borderRect = {SCREEN_WIDTH / 2 - 250, SCREEN_HEIGHT / 2 - 200, 500, 250};
+        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Couleur bleue pour le remplissage
+        SDL_RenderFillRect(renderer, &borderRect); // Remplir le cadre
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Couleur blanche pour la bordure
+        SDL_RenderDrawRect(renderer, &borderRect); // Dessiner la bordure
+
+        // Afficher les instructions
+        displayText(renderer, "Touches à connaitre :", SCREEN_WIDTH / 2 - 240, SCREEN_HEIGHT / 2 - 180, font, black);
+        displayText(renderer, "Fleche gauche : Deplacer Mario à gauche", SCREEN_WIDTH / 2 - 240, SCREEN_HEIGHT / 2 - 140, font, black);
+        displayText(renderer, "Fleche droite : Deplacer Mario à droite", SCREEN_WIDTH / 2 - 240, SCREEN_HEIGHT / 2 - 110, font, black);
+        displayText(renderer, "Espace : Sauter", SCREEN_WIDTH / 2 - 240, SCREEN_HEIGHT / 2 - 80, font, black);
+        displayText(renderer, "P : Pause", SCREEN_WIDTH / 2 - 240, SCREEN_HEIGHT / 2 - 50, font, black);
+        displayText(renderer, "M : Mute/Unmute la musique", SCREEN_WIDTH / 2 - 240, SCREEN_HEIGHT / 2 - 20, font, black);
+
+        // Encadrement pour le texte principal
+        SDL_Rect startRect = {SCREEN_WIDTH / 2 - 250, SCREEN_HEIGHT - 120, 500, 50};
+        SDL_SetRenderDrawColor(renderer, 0, 0, 255, 255); // Couleur bleue pour le remplissage
+        SDL_RenderFillRect(renderer, &startRect); // Remplir le cadre
+        SDL_SetRenderDrawColor(renderer, 255, 255, 255, 255); // Couleur blanche pour la bordure
+        SDL_RenderDrawRect(renderer, &startRect); // Dessiner la bordure
+        // Afficher le texte principal
+        displayText(renderer, "Appuyez sur ENTREE pour commencer", SCREEN_WIDTH / 2 - 240, SCREEN_HEIGHT - 100, font, white);
 
         SDL_RenderPresent(renderer);
 
@@ -330,12 +354,11 @@ void cleanUp() {
             if (e.type == SDL_QUIT) {
                 exit(0); // Quitter le jeu
             } else if (e.type == SDL_KEYDOWN && e.key.keysym.sym == SDLK_RETURN) {
-                inMenu = false; // Quitter le menu
+                inMenu = false;
             }
         }
     }
 }
-
 void displayPause(SDL_Renderer* renderer, SDL_Texture* pauseTexture, TTF_Font* font) {
     SDL_RenderClear(renderer);
     SDL_RenderCopy(renderer, pauseTexture, NULL, &pauseRect); // Utiliser pauseRect pour réduire la taille
