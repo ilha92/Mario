@@ -40,6 +40,7 @@ Mix_Music* bgMusic = NULL;
 Mix_Chunk* coinSound = NULL;
 Mix_Chunk* jumpSound = NULL;
 Mix_Chunk* pauseSound = NULL;
+Mix_Chunk* gameOverSound = NULL; 
 
 float velocityY = 0;
 bool isOnGround = false;
@@ -112,8 +113,11 @@ void loadSounds() {
     if (!pauseSound) {
         printf("Erreur chargement pauseSound: %s\n", Mix_GetError());
     }
+    gameOverSound = Mix_LoadWAV("Audio/Super_Mario_Bros/smb_mariodie.wav");
+    if (!gameOverSound) {
+        printf("Erreur chargement gameOverSound: %s\n", Mix_GetError());
+    }
 }
-
 void playBackgroundMusic() {
     if (bgMusic) {
         Mix_PlayMusic(bgMusic, -1); // -1 pour boucle infinie
@@ -130,6 +134,9 @@ void playJumpSound() {
 
 void playPauseSound() {
     if (pauseSound) Mix_PlayChannel(-1, pauseSound, 0);
+}
+void playGameOverSound() {
+    if (gameOverSound) Mix_PlayChannel(-1, gameOverSound, 0);
 }
 bool init() {
     if (SDL_Init(SDL_INIT_VIDEO) < 0) {
@@ -370,6 +377,9 @@ while (!quit) {
         SDL_SetRenderDrawColor(renderer, 0, 0, 0, 255);
         SDL_RenderClear(renderer);
         SDL_Color white = {255, 255, 255, 255};
+        
+        playGameOverSound(); // Joue le son "Game Over"
+        
         displayText(renderer, "Game Over", SCREEN_WIDTH / 2 - 100, SCREEN_HEIGHT / 2 - 50, font, white);
         SDL_RenderPresent(renderer);
         
@@ -478,6 +488,7 @@ void cleanupAudio() {
     if (coinSound) Mix_FreeChunk(coinSound);
     if (jumpSound) Mix_FreeChunk(jumpSound);
     if (pauseSound) Mix_FreeChunk(pauseSound);
+    if (gameOverSound) Mix_FreeChunk(gameOverSound); // Libère le son "Game Over"
     if (bgMusic) Mix_FreeMusic(bgMusic);
     Mix_CloseAudio();
 }
