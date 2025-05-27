@@ -47,6 +47,7 @@ bool isOnGround = false;
 bool jumping = false;
 bool facingRight = true;
 bool gameOver = false;
+bool musicMuted = false;
 
 SDL_Rect ground = {0, 550, 1600, 100}; // Taille augmentée
 
@@ -119,7 +120,7 @@ void loadSounds() {
     }
 }
 void playBackgroundMusic() {
-    if (bgMusic) {
+    if (bgMusic && !musicMuted) {
         Mix_PlayMusic(bgMusic, -1); // -1 pour boucle infinie
     }
 }
@@ -184,6 +185,15 @@ void loadMenuAndPauseTextures() {
     if (!menuTexture || !pauseTexture) {
         printf("Erreur chargement des textures du menu ou de la pause.\n");
         exit(1);
+    }
+}
+void toggleMusic() {
+    if (musicMuted) {
+        Mix_ResumeMusic(); // Réactive la musique
+        musicMuted = false;
+    } else {
+        Mix_PauseMusic(); // Coupe la musique
+        musicMuted = true;
     }
 }
 
@@ -421,6 +431,9 @@ while (!quit) {
                         currentState = JUMP;
                         playJumpSound(); // Joue le son de saut
                     }
+                    break;
+                case SDLK_m:
+                    toggleMusic(); // Coupe ou réactive la musique
                     break;
             }
         } else if (e.type == SDL_KEYUP) {
