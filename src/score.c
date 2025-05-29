@@ -2,7 +2,7 @@
 #include <SDL2/SDL_ttf.h>
 
 void displayScore(SDL_Renderer *renderer, TTF_Font *font, int score) {
-    SDL_Color color = {255, 255, 255, 255}; // Couleur blanches
+    SDL_Color color = {255, 255, 255, 255}; // Couleur blanche
     char scoreText[50];
     snprintf(scoreText, sizeof(scoreText), "Score: %d", score);
 
@@ -10,7 +10,7 @@ void displayScore(SDL_Renderer *renderer, TTF_Font *font, int score) {
     SDL_Texture* texture = SDL_CreateTextureFromSurface(renderer, surface);
     SDL_FreeSurface(surface);
 
-    SDL_Rect scoreRect = {10, 10, 100, 50}; // Position en haut à gauches
+    SDL_Rect scoreRect = {10, 10, 100, 50}; // Position en haut à gauche
     SDL_RenderCopy(renderer, texture, NULL, &scoreRect);
     SDL_DestroyTexture(texture);
 }

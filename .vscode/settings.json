@@ -7,6 +7,11 @@
     "collision.h": "c",
     "enemy.h": "c",
     "score.h": "c",
-    "config.h": "c"
-  }
+    "config.h": "c",
+    "coin.h": "c",
+    "player.h": "c",
+    "sdl_image.h": "c",
+    "texture.h": "c"
+  },
+  "C_Cpp.errorSquiggles": "disabled"
 }

@@ -4,7 +4,7 @@
 #include <SDL2/SDL.h>
 #include <stdbool.h>
 
-// Structure représentant une pièces
+// Structure représentant une pièce
 typedef struct {
     SDL_Rect rect;   // Rectangle pour la position et la taille de la pièce
     bool collected;  // Si la pièce a été collectée ou non
