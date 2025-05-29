@@ -5,7 +5,7 @@
 #include <stdbool.h>
 #include "enemy.h" // Pour avoir la structure Enemy
 
-// Fonction de vérification de collision
+// Fonction de vérification de collisions
 bool checkCollision(SDL_Rect a, SDL_Rect b);
 
 // Collisions avec le sol et les plateformes

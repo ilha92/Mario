@@ -7,4 +7,4 @@
 // Déclaration de la fonction pour afficher le score
 void displayScore(SDL_Renderer *renderer, TTF_Font *font, int score);
 
-#endif // SCORE_H
+#endif // SCORE_Hs

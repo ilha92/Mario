@@ -12,7 +12,7 @@ typedef struct {
     SDL_Rect rect;     // Position et taille de l'ennemi
     int velocity;      // Vitesse de déplacement
     int movingRight;   // 1 = va à droite, 0 = va à gauche
-    int alive;         // 1 = vivant, 0 = mort
+    int alive;         // 1 = vivant, 0 = morts
 } Enemy;
 
 // Initialise les ennemis

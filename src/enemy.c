@@ -30,7 +30,7 @@ void moveEnemies(Enemy enemies[], int numEnemies) {
                 enemies[i].rect.x -= enemies[i].velocity;
             }
 
-            // Change de direction s'ils touchent un bord de l'écran
+            // Change de direction s'ils touchent un bord de l'écrans
             if (enemies[i].rect.x <= 0 || enemies[i].rect.x >= SCREEN_WIDTH - enemies[i].rect.w) {
                 enemies[i].movingRight = !enemies[i].movingRight;
             }

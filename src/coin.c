@@ -13,7 +13,7 @@ void handleCoinCollection(SDL_Rect* playerRect, Coin* coins, int numCoins, int* 
     }
 }
 
-// Fonction pour faire apparaître une nouvelle pièce
+// Fonction pour faire apparaître une nouvelle pièces
 void spawnCoin(Coin coins[], int numCoins, SDL_Rect ground, SDL_Rect* platforms, int numPlatforms) {
     for (int i = 0; i < numCoins; i++) {
         if (coins[i].collected) {

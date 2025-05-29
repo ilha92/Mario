@@ -17,7 +17,7 @@ void initPlayer(Player* player) {
     player->health = 100;
 }
 
-// Fonction qui met à jour la position du joueur et la caméra
+// Fonction qui met à jour la position du joueur et la caméras
 void update_player_and_camera(Player* player, SDL_Rect* camera) {
     const Uint8 *state = SDL_GetKeyboardState(NULL);
 

@@ -18,7 +18,7 @@ void handleCollisions(SDL_Rect* playerRect, float* velocityY, bool* isOnGround, 
     // Collision avec le sol
     if (checkCollision(*playerRect, ground)) {
         playerRect->y = ground.y - playerRect->h;  // Mettre le joueur sur le sol
-        *velocityY = 0;  // Stopper la vitesse verticale
+        *velocityY = 0;  // Stopper la vitesse verticales
         *isOnGround = true;  // Le joueur est au sol
         *jumping = false;  // Plus en train de sauter
     }

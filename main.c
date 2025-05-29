@@ -262,7 +262,7 @@ int main(int argc, char* argv[]) {
             jumping = false;
         }
 
-        // Camera
+        // Cameras
         updateCamera(&camera, &playerRect);
 
         // Etat joueur

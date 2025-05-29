@@ -15,7 +15,7 @@ typedef struct {
 } Player;
 
 // Déclarations externes des variables globales
-extern int SCREEN_WIDTH;     // Largeur de l'écran
+extern int SCREEN_WIDTH;     // Largeur de l'écrans
 extern int SCREEN_HEIGHT;    // Hauteur de l'écran
 extern int MAP_WIDTH;        // Largeur de la carte
 extern int MAP_HEIGHT;       // Hauteur de la carte
